@@ -1,0 +1,68 @@
+#####
+# Web Server Settings
+#####
+
+# The port to listen for HTTPS requests on
+listenport: 8443
+
+# Show or hide eldim information from HTTP headers
+servertokens: true
+
+# Maximum uploaded file size to keep in RAM before using disk
+maxuploadram: 100
+
+#####
+# TLS Configuration
+#####
+
+# The TLS Certificate Chain File
+tlschain: "/etc/letsencrypt/live/eldim.example.com/fullchain.pem"
+
+# The TLS Private Key File
+tlskey: "/etc/letsencrypt/live/eldim.example.com/privkey.pem"
+
+#####
+# Clients
+#####
+
+# The file to load the clients from
+clientfile: "/etc/eldim/clients.yml"
+
+#####
+# System
+#####
+
+# Temporary File Upload Path
+tempuploadpath: "/var/lib/eldim"
+
+#####
+# Encryption 
+#####
+
+# The encryption password to use for all file uploads
+encryptionkey: "Insecure"
+
+#####
+# Backends
+#####
+
+# All the OpenStack Swift Backends
+swiftbackends:
+  - 
+    name: "OVH-Cold"
+    username: "openStackUser"
+    apikey: "openStackPassword"
+    authurl: "https://auth.cloud.ovh.net/v3"
+    region: "GRA3"
+    container: "my-logs-cold"
+    expireseconds: 63072000
+  - 
+    name: "OVH-Hot"
+    username: "openStackUser"
+    apikey: "openStackPassword"
+    authurl: "https://auth.cloud.ovh.net/v3"
+    region: "SBG3"
+    container: "my-logs-hot"
+    expireseconds: 2592000
+
+

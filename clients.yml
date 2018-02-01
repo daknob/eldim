@@ -1,0 +1,21 @@
+# All servers that can upload data to eldim
+
+-
+  name: "mail.example.com"
+  ipv4:
+    - "192.0.2.1"
+  ipv6:
+-
+  name: "eldim.example.com"
+  ipv4:
+    - "192.0.2.100"
+    - "192.0.2.200"
+  ipv6:
+    - "2001:db8::1"
+    - "2001:db8::2"
+-
+  name: "does-not-have-to-be-a-hostname"
+  ipv4:
+    - "127.0.0.1"
+  ipv6:
+    - "::1"

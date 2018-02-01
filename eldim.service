@@ -1,0 +1,12 @@
+[Unit]
+Description=eldim Data Storage Proxy
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/eldim -c /etc/eldim/eldim.yml
+Restart=always
+User=eldim
+
+[Install]
+WantedBy=multi-user.target
