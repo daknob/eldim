@@ -1,5 +1,5 @@
 # eldim
-eldim is a server that proxies file uploads to OpenStack Swift Backends
+An OpenStack Swift File Upload Proxy
 
 ## Description
 eldim is a web server that accepts file uploads from a particular set of
