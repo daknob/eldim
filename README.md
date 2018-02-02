@@ -333,6 +333,17 @@ This is the most serious limitation of eldim. It can limit the number of
 parallel requests very quickly, depending on the server RAM and the file
 sizes.
 
+### Many Swift API Calls
+Although it does not seem to be a problem with most OpenStack Swift backends,
+since all API calls are authenticated, eldim makes too many of them, and it
+may be rate limited by some defensive mechanism of the backend.
+
+It can make up to 10 API calls per file upload request, in order to be able
+to ensure that it can function properly. However, some optimizations are
+currently possible, but they have not been implemented since it does not seem
+to affect many cloud providers, adds complexity, and may reduce in more
+errors if something is not handled properly.
+
 ### Symmetric Encryption
 Since encryption is symmetric, the key to decrypt all files must always be
 stored in the eldim configuration file. If the eldim server is hacked,
