@@ -60,6 +60,20 @@ is required. It is configured to only work with TLSv1.2, the only currently
 secure version of TLS, but currently it may accept some more weak ciphers
 and not only the most secure ones.
 
+### Encryption
+For file encryption and decryption eldim uses a fairly known algorithm, called
+[TripleSec](https://keybase.io/triplesec/). It is essentially three
+cryptographic algorithms combined into a single library. It uses AES, Salsa20,
+and Twofish.
+
+It is entirely overkill for the purposes of this tool, but it is a simple and
+nice library that exposes a single function for encryption, and everything is
+handled automatically. There's no need to do HMACs, hashes, padding, IVs, or
+anything, and works quite well. It also comes with its own storage format,
+so the only output is a byte array that's just written to a file. However,
+TripleSec is the reason uploads may need up to `2*sizeof(file)` in terms of
+RAM.
+
 ## How to run eldim
 eldim runs as a daemon, since it has to listen for HTTPS requests
 continuously. For this reason, you need to ensure that the binary is
