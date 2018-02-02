@@ -29,10 +29,12 @@ func main() {
 	os.Remove(*outputFile)
 
 	/* Read the encrypted file to RAM */
+	logrus.Printf("Reading encrypted file to memory...")
 	encData, err := ioutil.ReadFile(*inputFile)
 	if err != nil {
 		logrus.Fatalf("Failed to read input file: %v", err)
 	}
+	logrus.Printf("File in memory. Size: %d bytes", len(encData))
 
 	/* Create an output file */
 	f, err := os.Create(*outputFile)
