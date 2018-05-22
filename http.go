@@ -210,6 +210,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Failed to save file.")
+		return
 	}
 
 	err = os.Remove(newFilePath)
@@ -219,6 +220,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Failed to save file.")
+		return
 	}
 
 	logrus.Printf("%s: File loaded into RAM. Size: %d bytes.", rid, len(upFile))
@@ -231,6 +233,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Failed to encrypt file.")
+		return
 	}
 
 	/* Encrypt the file: takes a byte array, returns a byte array, 2*sizeof(file) in RAM */
@@ -240,6 +243,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Failed to encrypt file.")
+		return
 	}
 
 	upFile = []byte{}
