@@ -10,7 +10,7 @@ import (
 
 	"github.com/keybase/go-triplesec"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/ncw/swift"
