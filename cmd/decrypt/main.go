@@ -7,7 +7,7 @@ import (
 
 	"github.com/keybase/go-triplesec"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
