@@ -141,6 +141,11 @@ when no credentials were supplied, to `Incorrect-Username` when the username
 provided by the user is incorrect, or to `Incorrect-Password` when the password
 supplied is not correct.
 
+### Successful File Upload Time Histogram
+eldim exports `eldim_file_upload_request_time`, which is a histogram of the
+time it took to successfully serve a file upload request. The request time is
+measured in seconds, and the buckets are one for every minute, up to two hours.
+
 ### Default Prometheus for Go Metrics
 The Prometheus Client Library for Go exports a heap of metrics by default,
 which include, among others, Go Garbage Collection metrics, Goroutine Info,

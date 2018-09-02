@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/daknob/hlog"
 	p "github.com/prometheus/client_golang/prometheus"
@@ -53,6 +54,9 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	if conf.ServerTokens {
 		w.Header().Set("Server", fmt.Sprintf("eldim %s", version))
 	}
+
+	/* Start Request Service Timer */
+	now := time.Now().Unix()
 
 	/* Get IP Address of Request */
 	ipAddr, _, err := net.SplitHostPort(r.RemoteAddr)
@@ -314,6 +318,9 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "text/plain")
 	fmt.Fprintf(w, "Ok")
+
+	/* Update Prometheus on the successful request handling */
 	promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "200"}).Inc()
+	promReqServTimeHist.Observe(float64(time.Now().Unix() - now))
 
 }

@@ -44,6 +44,13 @@ var (
 			"error",
 		},
 	)
+	promReqServTimeHist = p.NewHistogram(
+		p.HistogramOpts{
+			Name:    "eldim_file_upload_request_time",
+			Help:    "Histogram of time of successful file uploads to eldim",
+			Buckets: p.LinearBuckets(0, 60, 120),
+		},
+	)
 )
 
 const (
@@ -111,6 +118,7 @@ func main() {
 	/* Initialize Prometheus */
 	p.MustRegister(promReqServed)
 	p.MustRegister(promMetricsAuth)
+	p.MustRegister(promReqServTimeHist)
 
 	/* Various web server configurations */
 	logrus.Printf("Configuring the HTTP Server...")
