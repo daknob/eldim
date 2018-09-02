@@ -222,6 +222,21 @@ files' symmetric key. Anyone who has access to this key can decrypt all files
 that have been encrypted by eldim. Try to keep this a secret, and do not
 transmit it insecurely.
 
+#### prometheusenabled
+The `prometheusenabled` is a boolean value. If it has the value `true`, it
+enabled exporting of Prometheus metrics. If it's `false` (default if missing),
+then Prometheus metrics export is disabled.
+
+#### prometheusauthuser
+The `prometheusauthuser` is a string that includes the HTTP Basic Auth Username
+for the Prometheus metrics endpoint (`/metrics`). It needs to be a-z, A-Z, 0-9,
+and 20-128 characters long, for security reasons.
+
+#### prometheusauthpass
+The `prometheusauthpass` is a string that contains the HTTP Basic Auth Password
+for the Prometheus metrics endpoint (`/metrics`). It needs to be a-z, A-Z, 0-9,
+and 20-128 characters long, for security reasons.
+
 #### swiftbackends
 The `swiftbackends` is an array, which contains a list of all backends that
 eldim will upload data to. More than one data storage is supported, but if you
