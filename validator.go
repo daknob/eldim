@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"regexp"
 
 	"github.com/ncw/swift"
 	yaml "gopkg.in/yaml.v2"
@@ -146,6 +147,23 @@ func validateConfig(conf config) error {
 	}
 	if len(conf.EncryptionKey) < 30 {
 		logrus.Warnf("The encryption key set is less than 30 characters. It may not be so secure")
+	}
+
+	/* Validate Prometheus Settings */
+	if conf.PrometheusEnabled == true {
+		/* Only check Prometheus Configuration if Prometheus is enabled */
+		if conf.PrometheusAuthUser == "" {
+			return fmt.Errorf("You need to set the prometheusauthuser in the configuration file. eldim only works with HTTP Basic Auth for Prometheus Metrics")
+		}
+		if !regexp.MustCompile("^[a-zA-Z0-9]{20,128}$").MatchString(conf.PrometheusAuthUser) {
+			return fmt.Errorf("The prometheusauthuser must contain a-z, A-Z, and 0-9, and must be 20-128 characters long")
+		}
+		if conf.PrometheusAuthPass == "" {
+			return fmt.Errorf("You need to set the prometheusauthpass in the configuration file. eldim only works with HTTP Basic Auth for Prometheus Metrics")
+		}
+		if !regexp.MustCompile("^[a-zA-Z0-9]{20,128}$").MatchString(conf.PrometheusAuthPass) {
+			return fmt.Errorf("The prometheusauthpass must contain a-z, A-Z, and 0-9, and must be 20-128 characters long")
+		}
 	}
 
 	return nil

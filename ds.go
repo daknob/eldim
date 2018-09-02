@@ -24,6 +24,11 @@ type config struct {
 
 	/* Encryption */
 	EncryptionKey string `yaml:"encryptionkey"`
+
+	/* Prometheus Metrics */
+	PrometheusEnabled  bool   `yaml:"prometheusenabled"`
+	PrometheusAuthUser string `yaml:"prometheusauthuser"`
+	PrometheusAuthPass string `yaml:"prometheusauthpass"`
 }
 
 /*
