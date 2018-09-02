@@ -98,7 +98,8 @@ it before it even reads the configuration file. They are:
 * `-c`: The path to the configuration file
 
 ## Metrics
-As of `eldim v0.2.0`, eldim supports metrics exporting using Prometheus. In
+As of `eldim v0.2.0`, eldim supports metrics exporting using
+[Prometheus](https://prometheus.io/). In
 order to access the metrics, Prometheus has to be enabled from the
 configuration file. eldim **requires** HTTP Basic Authentication on the
 Metrics URL, and it is only available over HTTPS, through the same TCP port as
