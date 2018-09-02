@@ -8,19 +8,21 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/daknob/hlog"
+
 	"github.com/keybase/go-triplesec"
 
-	"github.com/sirupsen/logrus"
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/ncw/swift"
+	"github.com/sirupsen/logrus"
 )
 
 /*
 index handles GET requests to /
 */
 func index(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	logRequest(r)
+	hlog.LogRequest(r)
 
 	/* If it's okay to print information about the software, show some basic info */
 	if conf.ServerTokens {
@@ -45,7 +47,7 @@ v1fileUpload handles POST requests to /api/v1/file/upload/
 */
 func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	/* Normal HTTP Procedure */
-	rid := logRequest(r)
+	rid := hlog.LogRequest(r)
 	if conf.ServerTokens {
 		w.Header().Set("Server", fmt.Sprintf("eldim %s", version))
 	}

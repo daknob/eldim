@@ -2,21 +2,7 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-
-	"github.com/sirupsen/logrus"
-	"github.com/google/uuid"
 )
-
-/*
-logRequest will create a new Request ID, log the incoming request, and then
-return the Request ID for future usage.
-*/
-func logRequest(r *http.Request) string {
-	rid := uuid.New().String()
-	logrus.Printf("%s: %s \"%s %s %s\" \"%s\" \"%s\"", rid, r.RemoteAddr, r.Method, r.RequestURI, r.Proto, r.Referer(), r.Host)
-	return rid
-}
 
 /*
 getIPName returns the client name of a given IP Address ip. If it is not found,
