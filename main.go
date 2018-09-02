@@ -44,6 +44,15 @@ var (
 			"error",
 		},
 	)
+	promFileUpErrors = p.NewCounterVec(
+		p.CounterOpts{
+			Name: "eldim_file_upload_errors_occured",
+			Help: "Types of errors occured during file uploads",
+		},
+		[]string{
+			"error",
+		},
+	)
 	promReqServTimeHist = p.NewHistogram(
 		p.HistogramOpts{
 			Name:    "eldim_file_upload_request_time",
@@ -118,6 +127,7 @@ func main() {
 	/* Initialize Prometheus */
 	p.MustRegister(promReqServed)
 	p.MustRegister(promMetricsAuth)
+	p.MustRegister(promFileUpErrors)
 	p.MustRegister(promReqServTimeHist)
 
 	/* Various web server configurations */

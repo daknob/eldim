@@ -141,6 +141,13 @@ when no credentials were supplied, to `Incorrect-Username` when the username
 provided by the user is incorrect, or to `Incorrect-Password` when the password
 supplied is not correct.
 
+### File Upload Error Metrics
+eldim exports `eldim_file_upload_errors_occured`, which is a counter vector,
+and essentially counts all errors occured during file upload requests. You
+can use this to see what errors come up, or if there is a spike in errors
+recently, an in coordination with `eldim_http_requests_served` identify
+problems in your eldim setup.
+
 ### Successful File Upload Time Histogram
 eldim exports `eldim_file_upload_request_time`, which is a histogram of the
 time it took to successfully serve a file upload request. The request time is
