@@ -78,6 +78,18 @@ var (
 			"version",
 		},
 	)
+	promBytesUploadedSuc = p.NewCounter(
+		p.CounterOpts{
+			Name: "eldim_files_uploaded_bytes_successful",
+			Help: "Amount of bytes of files uploaded to eldim successfully",
+		},
+	)
+	promBytesUploadedOSS = p.NewCounter(
+		p.CounterOpts{
+			Name: "eldim_files_uploaded_bytes_swift",
+			Help: "Amount of bytes of files uploaded from eldim to OpenStack Swift Backends",
+		},
+	)
 )
 
 const (
@@ -149,6 +161,8 @@ func main() {
 	p.MustRegister(promReqServTimeHist)
 	p.MustRegister(promClients)
 	p.MustRegister(promIPs)
+	p.MustRegister(promBytesUploadedSuc)
+	p.MustRegister(promBytesUploadedOSS)
 
 	/* Set Prometheus Loaded Clients Metric */
 	var v4 float64

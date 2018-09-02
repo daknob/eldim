@@ -257,6 +257,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	}
 
 	logrus.Printf("%s: File loaded into RAM. Size: %d bytes.", rid, len(upFile))
+	promBytesUploadedSuc.Add(float64(len(upFile)))
 	logrus.Printf("%s: Encrypting file...", rid)
 
 	/* Create a new TripleSec Cipher, with a nil salt (required) */
@@ -304,6 +305,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 			promFileUpErrors.With(p.Labels{"error": "OpenStack-Swift-Upload-Failed"}).Inc()
 		} else {
 			uploads++
+			promBytesUploadedOSS.Add(float64(len(encFile)))
 		}
 
 		/* Set the expiry header */
