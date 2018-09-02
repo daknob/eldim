@@ -97,6 +97,91 @@ it before it even reads the configuration file. They are:
 * `-j`: When set, it will output all logs in JSON format, instead of plaintext
 * `-c`: The path to the configuration file
 
+## Metrics
+As of `eldim v0.2.0`, eldim supports metrics exporting using
+[Prometheus](https://prometheus.io/). In
+order to access the metrics, Prometheus has to be enabled from the
+configuration file. eldim **requires** HTTP Basic Authentication on the
+Metrics URL, and it is only available over HTTPS, through the same TCP port as
+the public API. For security reasons, both the username and password must be
+20-128 characters long.
+
+Currently the following metrics are exposed by `eldim`:
+
+### HTTP Requests Served
+eldim exports `eldim_http_requests_served`, which is a counter vector, with
+the following labels:
+
+#### method
+The `method` label contains the HTTP method that was used for this particular
+HTTP request, and common values can be `GET` and `POST`.
+
+#### path
+The `path` label contains the URL of this HTTP Request, such as `/` or even
+`/api/v1/file/upload/`.
+
+#### status
+The `status` label contains the HTTP Request Status Code that was returned,
+i.e. `200` or `400`.
+
+### Prometheus Metrics HTTP Basic Auth
+eldim exports `eldim_prometheus_metrics_scrape_auth`, which is a counter
+vector, and measures successful or unsuccessful scrapes of the Prometheus
+endpoint, based on their HTTP Basic Authentication Check. Through this you
+can monitor successful scrapes, scrape attempts without HTTP Basic Auth
+provided, as well as incorrect username or password attempts. It exposes
+the following labels:
+
+#### success
+Set to `true` or `false` depending on whether the scrape was successful.
+
+#### error
+Set to `HTTP-Basic-Auth-Not-Ok` during errors with HTTP Basic Auth, such as
+when no credentials were supplied, to `Incorrect-Username` when the username
+provided by the user is incorrect, or to `Incorrect-Password` when the password
+supplied is not correct.
+
+### File Upload Error Metrics
+eldim exports `eldim_file_upload_errors_occured`, which is a counter vector,
+and essentially counts all errors occured during file upload requests. You
+can use this to see what errors come up, or if there is a spike in errors
+recently, an in coordination with `eldim_http_requests_served` identify
+problems in your eldim setup.
+
+### Successful File Upload Time Histogram
+eldim exports `eldim_file_upload_request_time`, which is a histogram of the
+time it took to successfully serve a file upload request. The request time is
+measured in seconds, and the buckets are one for every minute, up to two hours.
+
+### Available Clients
+eldim exports `eldim_loaded_clients`, which is a gauge vector that contains
+how many clients are available and loaded from the configuration file to the
+system and have `ipv6` and `ipv4` addressess. This metric only changes when
+the configuration file is loaded, but can be useful to track historical changes
+in `eldim` hosts.
+eldim also exports `eldim_loaded_ip_addressess`, which is a gauge vector,
+containing information on how many IP addressess, and their version (`6`/`4`),
+have been loaded to `eldim`. Like above, this is only loaded when the
+`clients.yml` file is loaded, so it's also used for mostly historical reasons.
+
+### Uploaded Bytes
+eldim exports `eldim_files_uploaded_bytes_successful`, which is a gauge,
+whose value contains the total amount of bytes since eldim launch that have
+been successfully uploaded and processed by eldim. This includes the sum of
+the size of all files uploaded **to** eldim.
+In addition to that, there's also `eldim_files_uploaded_bytes_swift`, which
+includes the total amount of bytes that **eldim** uploaded, to OpenStack
+Swift backends. This number is different than the previous once since it
+includes encryption overhead, as well as the possibility of multiple OpenStack
+Swift backends, causing more data to be uploaded.
+
+### Default Prometheus for Go Metrics
+The Prometheus Client Library for Go exports a heap of metrics by default,
+which include, among others, Go Garbage Collection metrics, Goroutine Info,
+Go compiler version, Application Memory Info, Running Threads, as well as
+Exporter Info, such as how many times the application data has been scraped
+by Prometheus.
+
 ## Configuration
 This section covers all the configuration options for eldim. There is a main
 configuration file which can control the behavior and settings of the server,
@@ -158,6 +243,21 @@ The `encryptionkey` is a string that will be used to generate the encrypted
 files' symmetric key. Anyone who has access to this key can decrypt all files
 that have been encrypted by eldim. Try to keep this a secret, and do not
 transmit it insecurely.
+
+#### prometheusenabled
+The `prometheusenabled` is a boolean value. If it has the value `true`, it
+enabled exporting of Prometheus metrics. If it's `false` (default if missing),
+then Prometheus metrics export is disabled.
+
+#### prometheusauthuser
+The `prometheusauthuser` is a string that includes the HTTP Basic Auth Username
+for the Prometheus metrics endpoint (`/metrics`). It needs to be a-z, A-Z, 0-9,
+and 20-128 characters long, for security reasons.
+
+#### prometheusauthpass
+The `prometheusauthpass` is a string that contains the HTTP Basic Auth Password
+for the Prometheus metrics endpoint (`/metrics`). It needs to be a-z, A-Z, 0-9,
+and 20-128 characters long, for security reasons.
 
 #### swiftbackends
 The `swiftbackends` is an array, which contains a list of all backends that

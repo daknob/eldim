@@ -8,8 +8,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	p "github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"github.com/julienschmidt/httprouter"
+	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -18,8 +21,79 @@ var (
 	clients []clientInfo
 )
 
+/* Prometheus Metrics */
+var (
+	promReqServed = p.NewCounterVec(
+		p.CounterOpts{
+			Name: "eldim_http_requests_served",
+			Help: "HTTP Requests Served by eldim, with corresponding types and status codes, per path",
+		},
+		[]string{
+			"method",
+			"path",
+			"status",
+		},
+	)
+	promMetricsAuth = p.NewCounterVec(
+		p.CounterOpts{
+			Name: "eldim_prometheus_metrics_scrape_auth",
+			Help: "HTTP Requests to the Prometheus Metrics Endpoint and their Authentication Status",
+		},
+		[]string{
+			"success",
+			"error",
+		},
+	)
+	promFileUpErrors = p.NewCounterVec(
+		p.CounterOpts{
+			Name: "eldim_file_upload_errors_occured",
+			Help: "Types of errors occured during file uploads",
+		},
+		[]string{
+			"error",
+		},
+	)
+	promReqServTimeHist = p.NewHistogram(
+		p.HistogramOpts{
+			Name:    "eldim_file_upload_request_time",
+			Help:    "Histogram of time of successful file uploads to eldim",
+			Buckets: p.LinearBuckets(0, 60, 120),
+		},
+	)
+	promClients = p.NewGaugeVec(
+		p.GaugeOpts{
+			Name: "eldim_loaded_clients",
+			Help: "Clients that are allowed to upload files to eldim",
+		},
+		[]string{
+			"type",
+		},
+	)
+	promIPs = p.NewGaugeVec(
+		p.GaugeOpts{
+			Name: "eldim_loaded_ip_addressess",
+			Help: "IP Addressess that are allowed to upload files to eldim",
+		},
+		[]string{
+			"version",
+		},
+	)
+	promBytesUploadedSuc = p.NewCounter(
+		p.CounterOpts{
+			Name: "eldim_files_uploaded_bytes_successful",
+			Help: "Amount of bytes of files uploaded to eldim successfully",
+		},
+	)
+	promBytesUploadedOSS = p.NewCounter(
+		p.CounterOpts{
+			Name: "eldim_files_uploaded_bytes_swift",
+			Help: "Amount of bytes of files uploaded from eldim to OpenStack Swift Backends",
+		},
+	)
+)
+
 const (
-	version = "v0.1.1"
+	version = "v0.2.0"
 )
 
 func main() {
@@ -80,6 +154,36 @@ func main() {
 		logrus.Fatalf("Could not parse clients YML file: %v", err)
 	}
 
+	/* Initialize Prometheus */
+	p.MustRegister(promReqServed)
+	p.MustRegister(promMetricsAuth)
+	p.MustRegister(promFileUpErrors)
+	p.MustRegister(promReqServTimeHist)
+	p.MustRegister(promClients)
+	p.MustRegister(promIPs)
+	p.MustRegister(promBytesUploadedSuc)
+	p.MustRegister(promBytesUploadedOSS)
+
+	/* Set Prometheus Loaded Clients Metric */
+	var v4 float64
+	var v6 float64
+	var v4a float64
+	var v6a float64
+	for _, c := range clients {
+		if len(c.Ipv4) >= 1 {
+			v4++
+			v4a += float64(len(c.Ipv4))
+		}
+		if len(c.Ipv6) >= 1 {
+			v6++
+			v6a += float64(len(c.Ipv6))
+		}
+	}
+	promClients.With(p.Labels{"type": "ipv6"}).Set(v6)
+	promClients.With(p.Labels{"type": "ipv4"}).Set(v4)
+	promIPs.With(p.Labels{"version": "6"}).Set(v6a)
+	promIPs.With(p.Labels{"version": "4"}).Set(v4a)
+
 	/* Various web server configurations */
 	logrus.Printf("Configuring the HTTP Server...")
 
@@ -87,6 +191,22 @@ func main() {
 	router := httprouter.New()
 	router.GET("/", index)
 	router.POST("/api/v1/file/upload/", v1fileUpload)
+
+	/* Only enable Prometheus metrics if configured */
+	if conf.PrometheusEnabled {
+		router.GET(
+			"/metrics",
+			requestBasicAuth(
+				conf.PrometheusAuthUser,
+				conf.PrometheusAuthPass,
+				"Prometheus Metrics",
+				*promMetricsAuth,
+				httpHandlerToHTTPRouterHandler(
+					promhttp.Handler(),
+				),
+			),
+		)
+	}
 
 	/* Configure TLS */
 	tlsConfig := &tls.Config{

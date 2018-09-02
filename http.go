@@ -7,8 +7,10 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/daknob/hlog"
+	p "github.com/prometheus/client_golang/prometheus"
 
 	"github.com/keybase/go-triplesec"
 
@@ -40,6 +42,7 @@ func index(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		fmt.Fprintf(w, " ")
 	}
 
+	promReqServed.With(p.Labels{"method": "GET", "path": "/", "status": "200"}).Inc()
 }
 
 /*
@@ -51,6 +54,9 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	if conf.ServerTokens {
 		w.Header().Set("Server", fmt.Sprintf("eldim %s", version))
 	}
+
+	/* Start Request Service Timer */
+	now := time.Now().Unix()
 
 	/* Get IP Address of Request */
 	ipAddr, _, err := net.SplitHostPort(r.RemoteAddr)
@@ -65,6 +71,8 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		w.WriteHeader(http.StatusForbidden)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "IP Address not in access list")
+		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "403"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "IP-Not-Allowed"}).Inc()
 		return
 	}
 	logrus.Printf("%s: Detected Hostname: %s", rid, hostname)
@@ -81,6 +89,8 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Error while processing upload request")
+		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "Multipart-Form-Parse-Error"}).Inc()
 		return
 	}
 	logrus.Printf("%s: Done parsing upload", rid)
@@ -91,6 +101,8 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		w.WriteHeader(http.StatusBadRequest)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "File name not supplied")
+		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "400"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "File-Name-Not-Provided"}).Inc()
 		return
 	}
 
@@ -116,6 +128,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		err := c.Authenticate()
 		if err != nil {
 			logrus.Errorf("%s: Unable to connect to OpenStack Swift Backend \"%s\"", rid, be.Name)
+			promFileUpErrors.With(p.Labels{"error": "OpenStack-Swift-Backend-Connection-Error"}).Inc()
 			continue
 		}
 
@@ -130,6 +143,8 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "An error occured while processing the uploaded file")
+		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "No-Openstack-Swift-Backends-Available"}).Inc()
 		return
 	}
 	logrus.Printf("%s: Connection successful. %d OpenStack Swift Backends live.", rid, len(sc))
@@ -143,6 +158,8 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 			w.WriteHeader(http.StatusBadRequest)
 			w.Header().Set("Content-Type", "text/plain")
 			fmt.Fprintf(w, "File already exists.")
+			promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "400"}).Inc()
+			promFileUpErrors.With(p.Labels{"error": "File-Already-Exists"}).Inc()
 			return
 		}
 	}
@@ -159,6 +176,8 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		w.WriteHeader(http.StatusBadRequest)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Did not supply a valid file.")
+		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "400"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "File-Invalid-Or-Missing"}).Inc()
 		return
 	}
 
@@ -172,6 +191,8 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Failed to save file.")
+		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "File-Creation-Failed"}).Inc()
 		return
 	}
 
@@ -181,6 +202,8 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Failed to save file.")
+		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "File-Copy-Failed"}).Inc()
 		return
 	}
 
@@ -190,6 +213,8 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Failed to save file.")
+		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "File-Close-Failed-IO-Error-Old"}).Inc()
 		return
 	}
 	err = nfile.Close()
@@ -198,6 +223,8 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Failed to save file.")
+		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "File-Close-Failed-IO-Error-New"}).Inc()
 		return
 	}
 
@@ -212,6 +239,8 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Failed to save file.")
+		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "File-Read-Failed"}).Inc()
 		return
 	}
 
@@ -222,10 +251,13 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Failed to save file.")
+		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "File-Delete-Failed"}).Inc()
 		return
 	}
 
 	logrus.Printf("%s: File loaded into RAM. Size: %d bytes.", rid, len(upFile))
+	promBytesUploadedSuc.Add(float64(len(upFile)))
 	logrus.Printf("%s: Encrypting file...", rid)
 
 	/* Create a new TripleSec Cipher, with a nil salt (required) */
@@ -235,6 +267,8 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Failed to encrypt file.")
+		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "Failed-To-Initialize-TripleSec"}).Inc()
 		return
 	}
 
@@ -245,6 +279,8 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Failed to encrypt file.")
+		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "Failed-To-Encrypt-File-TripleSec"}).Inc()
 		return
 	}
 
@@ -266,8 +302,10 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		err := be.ObjectPutBytes(co[i], uploadFileName, encFile, "application/octet-stream")
 		if err != nil {
 			logrus.Errorf("%s: Failed to upload %s to %s: %v", rid, uploadFileName, na[i], err)
+			promFileUpErrors.With(p.Labels{"error": "OpenStack-Swift-Upload-Failed"}).Inc()
 		} else {
 			uploads++
+			promBytesUploadedOSS.Add(float64(len(encFile)))
 		}
 
 		/* Set the expiry header */
@@ -277,6 +315,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 			})
 			if err != nil {
 				logrus.Errorf("%s: Failed to set expiry for file %s to %d seconds", rid, uploadFileName, ex[i])
+				promFileUpErrors.With(p.Labels{"error": "OpenStack-Swift-Expiry-Set-Failed"}).Inc()
 			}
 		}
 
@@ -290,6 +329,8 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Failed to store file.")
+		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "OpenStack-Swift-All-Uploads-Failed"}).Inc()
 	}
 
 	/* All good, finally it's over */
@@ -297,5 +338,9 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "text/plain")
 	fmt.Fprintf(w, "Ok")
+
+	/* Update Prometheus on the successful request handling */
+	promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "200"}).Inc()
+	promReqServTimeHist.Observe(float64(time.Now().Unix() - now))
 
 }
