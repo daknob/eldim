@@ -43,6 +43,19 @@ tempuploadpath: "/var/lib/eldim"
 encryptionkey: "Insecure"
 
 #####
+# Prometheus
+#####
+
+# Enable or disable Prometheus metrics
+prometheusenabled: true
+
+# Prometheus Endpoint (/metrics) HTTP Basic Auth Username
+prometheusauthuser: "username"
+
+# Prometheus Endpoint (/metrics) HTTP Basic Auth Password
+prometheusauthpass: "password"
+
+#####
 # Backends
 #####
 
