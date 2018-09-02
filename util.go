@@ -5,6 +5,8 @@ import (
 	"crypto/subtle"
 	"fmt"
 	"net/http"
+
+	"github.com/julienschmidt/httprouter"
 )
 
 /*
@@ -32,13 +34,13 @@ func getIPName(ip string) (string, error) {
 requestBasicAuth is an HTTP Handler wrapper that will require the passed handler to
 be served only if the HTTP Basic Authentication Credentials are correct.
 */
-func requestBasicAuth(username, password, realm string, handler http.HandlerFunc) http.HandlerFunc {
+func requestBasicAuth(username, password, realm string, handler httprouter.Handle) httprouter.Handle {
 
 	/* Calculate the SHA-256 Hash of the Required Username and Password */
 	RequiredUserNameHash := sha256.Sum256([]byte(username))
 	RequiredPasswordHash := sha256.Sum256([]byte(password))
 
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request, Params httprouter.Params) {
 
 		user, pass, ok := r.BasicAuth()
 
@@ -61,6 +63,6 @@ func requestBasicAuth(username, password, realm string, handler http.HandlerFunc
 			return
 		}
 
-		handler(w, r)
+		handler(w, r, Params)
 	}
 }
