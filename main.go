@@ -8,8 +8,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	p "github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"github.com/julienschmidt/httprouter"
+	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -18,8 +21,23 @@ var (
 	clients []clientInfo
 )
 
+/* Prometheus Metrics */
+var (
+	promReqServed = p.NewCounterVec(
+		p.CounterOpts{
+			Name: "eldim_http_requests_served",
+			Help: "HTTP Requests Served by eldim, with corresponding types and status codes, per path",
+		},
+		[]string{
+			"method",
+			"path",
+			"status",
+		},
+	)
+)
+
 const (
-	version = "v0.1.1"
+	version = "v0.2.0"
 )
 
 func main() {
@@ -80,6 +98,9 @@ func main() {
 		logrus.Fatalf("Could not parse clients YML file: %v", err)
 	}
 
+	/* Initialize Prometheus */
+	p.MustRegister(promReqServed)
+
 	/* Various web server configurations */
 	logrus.Printf("Configuring the HTTP Server...")
 
@@ -87,6 +108,17 @@ func main() {
 	router := httprouter.New()
 	router.GET("/", index)
 	router.POST("/api/v1/file/upload/", v1fileUpload)
+	router.GET(
+		"/metrics",
+		requestBasicAuth(
+			conf.PrometheusAuthUser,
+			conf.PrometheusAuthPass,
+			"Prometheus Metrics",
+			httpHandlerToHTTPRouterHandler(
+				promhttp.Handler(),
+			),
+		),
+	)
 
 	/* Configure TLS */
 	tlsConfig := &tls.Config{

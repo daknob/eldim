@@ -97,6 +97,39 @@ it before it even reads the configuration file. They are:
 * `-j`: When set, it will output all logs in JSON format, instead of plaintext
 * `-c`: The path to the configuration file
 
+## Metrics
+As of `eldim v0.2.0`, eldim supports metrics exporting using Prometheus. In
+order to access the metrics, Prometheus has to be enabled from the
+configuration file. eldim **requires** HTTP Basic Authentication on the
+Metrics URL, and it is only available over HTTPS, through the same TCP port as
+the public API. For security reasons, both the username and password must be
+20-128 characters long.
+
+Currently the following metrics are exposed by `eldim`:
+
+### HTTP Requests Served
+eldim exports `eldim_http_requests_served`, which is a counter vector, with
+the following labels:
+
+#### method
+The `method` label contains the HTTP method that was used for this particular
+HTTP request, and common values can be `GET` and `POST`.
+
+#### path
+The `path` label contains the URL of this HTTP Request, such as `/` or even
+`/api/v1/file/upload/`.
+
+#### status
+The `status` label contains the HTTP Request Status Code that was returned,
+i.e. `200` or `400`.
+
+### Default Prometheus for Go Metrics
+The Prometheus Client Library for Go exports a heap of metrics by default,
+which include, among others, Go Garbage Collection metrics, Goroutine Info,
+Go compiler version, Application Memory Info, Running Threads, as well as
+Exporter Info, such as how many times the application data has been scraped
+by Prometheus.
+
 ## Configuration
 This section covers all the configuration options for eldim. There is a main
 configuration file which can control the behavior and settings of the server,

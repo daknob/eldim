@@ -66,3 +66,13 @@ func requestBasicAuth(username, password, realm string, handler httprouter.Handl
 		handler(w, r, Params)
 	}
 }
+
+/*
+httpHandlerToHTTPRouterHandler is a function that converts an HTTP Handler to an HTTPRouter Handler, ignoring
+the Params field and assuming it is not used
+*/
+func httpHandlerToHTTPRouterHandler(h http.Handler) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+		h.ServeHTTP(w, r)
+	}
+}
