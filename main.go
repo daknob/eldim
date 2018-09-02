@@ -137,18 +137,22 @@ func main() {
 	router := httprouter.New()
 	router.GET("/", index)
 	router.POST("/api/v1/file/upload/", v1fileUpload)
-	router.GET(
-		"/metrics",
-		requestBasicAuth(
-			conf.PrometheusAuthUser,
-			conf.PrometheusAuthPass,
-			"Prometheus Metrics",
-			*promMetricsAuth,
-			httpHandlerToHTTPRouterHandler(
-				promhttp.Handler(),
+
+	/* Only enable Prometheus metrics if configured */
+	if conf.PrometheusEnabled {
+		router.GET(
+			"/metrics",
+			requestBasicAuth(
+				conf.PrometheusAuthUser,
+				conf.PrometheusAuthPass,
+				"Prometheus Metrics",
+				*promMetricsAuth,
+				httpHandlerToHTTPRouterHandler(
+					promhttp.Handler(),
+				),
 			),
-		),
-	)
+		)
+	}
 
 	/* Configure TLS */
 	tlsConfig := &tls.Config{
