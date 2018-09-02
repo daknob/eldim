@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+	p "github.com/prometheus/client_golang/prometheus"
 )
 
 /*
@@ -34,7 +35,7 @@ func getIPName(ip string) (string, error) {
 requestBasicAuth is an HTTP Handler wrapper that will require the passed handler to
 be served only if the HTTP Basic Authentication Credentials are correct.
 */
-func requestBasicAuth(username, password, realm string, handler httprouter.Handle) httprouter.Handle {
+func requestBasicAuth(username, password, realm string, pa p.CounterVec, handler httprouter.Handle) httprouter.Handle {
 
 	/* Calculate the SHA-256 Hash of the Required Username and Password */
 	RequiredUserNameHash := sha256.Sum256([]byte(username))
@@ -55,14 +56,29 @@ func requestBasicAuth(username, password, realm string, handler httprouter.Handl
 			always a constant size. Calculation of the SHA-256 hash can still be attacked, but isn't as likely,
 			since the inputs are constants.
 		*/
-
-		if !ok || subtle.ConstantTimeCompare(PassedUsername[:], RequiredUserNameHash[:]) != 1 || subtle.ConstantTimeCompare(PassedPassword[:], RequiredPasswordHash[:]) != 1 {
+		if !ok {
+			pa.With(p.Labels{"success": "false", "error": "HTTP-Basic-Auth-Not-Ok"}).Inc()
+			w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
+			w.WriteHeader(401)
+			w.Write([]byte("You need to supply the correct credentials for this page.\n"))
+			return
+		}
+		if subtle.ConstantTimeCompare(PassedUsername[:], RequiredUserNameHash[:]) != 1 {
+			pa.With(p.Labels{"success": "false", "error": "Incorrect-Username"}).Inc()
+			w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
+			w.WriteHeader(401)
+			w.Write([]byte("You need to supply the correct credentials for this page.\n"))
+			return
+		}
+		if subtle.ConstantTimeCompare(PassedPassword[:], RequiredPasswordHash[:]) != 1 {
+			pa.With(p.Labels{"success": "false", "error": "Incorrect-Password"}).Inc()
 			w.Header().Set("WWW-Authenticate", `Basic realm="`+realm+`"`)
 			w.WriteHeader(401)
 			w.Write([]byte("You need to supply the correct credentials for this page.\n"))
 			return
 		}
 
+		pa.With(p.Labels{"success": "true", "error": ""}).Inc()
 		handler(w, r, Params)
 	}
 }

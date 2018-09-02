@@ -124,6 +124,23 @@ The `path` label contains the URL of this HTTP Request, such as `/` or even
 The `status` label contains the HTTP Request Status Code that was returned,
 i.e. `200` or `400`.
 
+### Prometheus Metrics HTTP Basic Auth
+eldim exports `eldim_prometheus_metrics_scrape_auth`, which is a counter
+vector, and measures successful or unsuccessful scrapes of the Prometheus
+endpoint, based on their HTTP Basic Authentication Check. Through this you
+can monitor successful scrapes, scrape attempts without HTTP Basic Auth
+provided, as well as incorrect username or password attempts. It exposes
+the following labels:
+
+#### success
+Set to `true` or `false` depending on whether the scrape was successful.
+
+#### error
+Set to `HTTP-Basic-Auth-Not-Ok` during errors with HTTP Basic Auth, such as
+when no credentials were supplied, to `Incorrect-Username` when the username
+provided by the user is incorrect, or to `Incorrect-Password` when the password
+supplied is not correct.
+
 ### Default Prometheus for Go Metrics
 The Prometheus Client Library for Go exports a heap of metrics by default,
 which include, among others, Go Garbage Collection metrics, Goroutine Info,

@@ -34,6 +34,16 @@ var (
 			"status",
 		},
 	)
+	promMetricsAuth = p.NewCounterVec(
+		p.CounterOpts{
+			Name: "eldim_prometheus_metrics_scrape_auth",
+			Help: "HTTP Requests to the Prometheus Metrics Endpoint and their Authentication Status",
+		},
+		[]string{
+			"success",
+			"error",
+		},
+	)
 )
 
 const (
@@ -100,6 +110,7 @@ func main() {
 
 	/* Initialize Prometheus */
 	p.MustRegister(promReqServed)
+	p.MustRegister(promMetricsAuth)
 
 	/* Various web server configurations */
 	logrus.Printf("Configuring the HTTP Server...")
@@ -114,6 +125,7 @@ func main() {
 			conf.PrometheusAuthUser,
 			conf.PrometheusAuthPass,
 			"Prometheus Metrics",
+			*promMetricsAuth,
 			httpHandlerToHTTPRouterHandler(
 				promhttp.Handler(),
 			),
