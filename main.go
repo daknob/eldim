@@ -60,6 +60,24 @@ var (
 			Buckets: p.LinearBuckets(0, 60, 120),
 		},
 	)
+	promClients = p.NewGaugeVec(
+		p.GaugeOpts{
+			Name: "eldim_loaded_clients",
+			Help: "Clients that are allowed to upload files to eldim",
+		},
+		[]string{
+			"type",
+		},
+	)
+	promIPs = p.NewGaugeVec(
+		p.GaugeOpts{
+			Name: "eldim_loaded_ip_addressess",
+			Help: "IP Addressess that are allowed to upload files to eldim",
+		},
+		[]string{
+			"version",
+		},
+	)
 )
 
 const (
@@ -129,6 +147,28 @@ func main() {
 	p.MustRegister(promMetricsAuth)
 	p.MustRegister(promFileUpErrors)
 	p.MustRegister(promReqServTimeHist)
+	p.MustRegister(promClients)
+	p.MustRegister(promIPs)
+
+	/* Set Prometheus Loaded Clients Metric */
+	var v4 float64
+	var v6 float64
+	var v4a float64
+	var v6a float64
+	for _, c := range clients {
+		if len(c.Ipv4) >= 1 {
+			v4++
+			v4a += float64(len(c.Ipv4))
+		}
+		if len(c.Ipv6) >= 1 {
+			v6++
+			v6a += float64(len(c.Ipv6))
+		}
+	}
+	promClients.With(p.Labels{"type": "ipv6"}).Set(v6)
+	promClients.With(p.Labels{"type": "ipv4"}).Set(v4)
+	promIPs.With(p.Labels{"version": "6"}).Set(v6a)
+	promIPs.With(p.Labels{"version": "4"}).Set(v4a)
 
 	/* Various web server configurations */
 	logrus.Printf("Configuring the HTTP Server...")

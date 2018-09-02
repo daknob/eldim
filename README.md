@@ -153,6 +153,17 @@ eldim exports `eldim_file_upload_request_time`, which is a histogram of the
 time it took to successfully serve a file upload request. The request time is
 measured in seconds, and the buckets are one for every minute, up to two hours.
 
+### Available Clients
+eldim exports `eldim_loaded_clients`, which is a gauge vector that contains
+how many clients are available and loaded from the configuration file to the
+system and have `ipv6` and `ipv4` addressess. This metric only changes when
+the configuration file is loaded, but can be useful to track historical changes
+in `eldim` hosts.
+eldim also exports `eldim_loaded_ip_addressess`, which is a gauge vector,
+containing information on how many IP addressess, and their version (`6`/`4`),
+have been loaded to `eldim`. Like above, this is only loaded when the
+`clients.yml` file is loaded, so it's also used for mostly historical reasons.
+
 ### Default Prometheus for Go Metrics
 The Prometheus Client Library for Go exports a heap of metrics by default,
 which include, among others, Go Garbage Collection metrics, Goroutine Info,
