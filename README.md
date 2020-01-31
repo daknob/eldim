@@ -330,6 +330,11 @@ The `ipv6` array is a list of strings with IPv6 addresses that belong to this
 host. The shortest format must be used, so `2001:db8::1` will work, but
 `2001:0db8:0000:0000:0000:0000:0000:0001` will not. They can be more than one.
 
+#### password
+The `password` string is a password that can be supplied by the `password` POST
+form element that can be used to lookup clients instead of by their IP Address.
+The `password` is checked before the IP Address of the host.
+
 ### Example Configuration Files
 There are example configuration files that include all of the above commands
 in this repository. Feel free to start with them as your base, and then make
@@ -359,6 +364,13 @@ to be uploaded here.
 
 This API call will return `HTTP 200` and print `Ok` if the upload succeeded.
 Any other HTTP Status Code or message is an error.
+
+#### password
+This `POST` parameter is a string that specifies a password, which will be
+checked against `eldim`'s `clients.yml` and will identify hosts based on their
+password key, instead of their IP Address. Password checks take precedence over
+IP Address checks. The password must be between 20 and 128 characters for
+security reasons.
 
 ## How to upload data from a server
 You can basically upload files to eldim in any way you like, as long as you

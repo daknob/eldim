@@ -19,3 +19,6 @@
     - "127.0.0.1"
   ipv6:
     - "::1"
+-
+  name: "password-match"
+  password: "this-is-a-very-secure-password"
