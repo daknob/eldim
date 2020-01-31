@@ -260,7 +260,12 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	promBytesUploadedSuc.Add(float64(len(upFile)))
 	logrus.Printf("%s: Encrypting file...", rid)
 
-	/* Create a new TripleSec Cipher, with a nil salt (required) */
+	/*
+	   Create a new TripleSec Cipher, with a nil salt (required)
+
+	   The number 4 being passed is the Cipher version, with 4 being
+	   currently the latest version according to the documentation.
+	*/
 	enc, err := triplesec.NewCipher([]byte(conf.EncryptionKey), nil, 4)
 	if err != nil {
 		logrus.Errorf("%s: Failed to initialize the encryption algorithm: %v", rid, err)
