@@ -175,11 +175,11 @@ func main() {
 	p.MustRegister(promClientIDs)
 
 	/* Set Prometheus Loaded Clients Metric */
-	var v4 float64
-	var v6 float64
-	var pass float64
-	var v4a float64
-	var v6a float64
+	var v4 float64 = 0
+	var v6 float64 = 0
+	var pass float64 = 0
+	var v4a float64 = 0
+	var v6a float64 = 0
 	for _, c := range clients {
 		if len(c.Ipv4) >= 1 {
 			v4++
