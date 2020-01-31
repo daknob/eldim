@@ -86,6 +86,10 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 			promFileUpErrors.With(p.Labels{"error": "IP-Not-Allowed"}).Inc()
 			return
 		}
+
+		promClientIDs.With(p.Labels{"type": "ipaddr"}).Inc()
+	} else {
+		promClientIDs.With(p.Labels{"type": "password"}).Inc()
 	}
 
 	logrus.Printf("%s: Detected Hostname: %s", rid, hostname)

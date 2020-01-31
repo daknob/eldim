@@ -90,6 +90,15 @@ var (
 			Help: "Amount of bytes of files uploaded from eldim to OpenStack Swift Backends",
 		},
 	)
+	promClientIDs = p.NewCounterVec(
+		p.CounterOpts{
+			Name: "eldim_client_id_type",
+			Help: "Type of Client Identification used (Password vs IP Address)",
+		},
+		[]string{
+			"type",
+		},
+	)
 )
 
 const (
@@ -163,6 +172,7 @@ func main() {
 	p.MustRegister(promIPs)
 	p.MustRegister(promBytesUploadedSuc)
 	p.MustRegister(promBytesUploadedOSS)
+	p.MustRegister(promClientIDs)
 
 	/* Set Prometheus Loaded Clients Metric */
 	var v4 float64

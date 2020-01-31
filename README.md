@@ -175,6 +175,17 @@ Swift backends. This number is different than the previous once since it
 includes encryption overhead, as well as the possibility of multiple OpenStack
 Swift backends, causing more data to be uploaded.
 
+### Client Identification Type
+eldim exports `eldim_client_id_type`, which is a counter vector, with the
+following label:
+
+#### type
+The `type` label contains the type of each successful authentication done
+against `eldim`. It contains two possible values: `ipaddr` and `password`. The
+first value is assigned every time a successful authentication is performed
+with an IP Address, and the second is assigned every time a successful
+authentication is performed with a password.
+
 ### Default Prometheus for Go Metrics
 The Prometheus Client Library for Go exports a heap of metrics by default,
 which include, among others, Go Garbage Collection metrics, Goroutine Info,
