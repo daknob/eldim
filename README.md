@@ -158,7 +158,8 @@ eldim exports `eldim_loaded_clients`, which is a gauge vector that contains
 how many clients are available and loaded from the configuration file to the
 system and have `ipv6` and `ipv4` addressess. This metric only changes when
 the configuration file is loaded, but can be useful to track historical changes
-in `eldim` hosts.
+in `eldim` hosts. This field may also contain `password` for clients that are
+being identified by a password.
 eldim also exports `eldim_loaded_ip_addressess`, which is a gauge vector,
 containing information on how many IP addressess, and their version (`6`/`4`),
 have been loaded to `eldim`. Like above, this is only loaded when the
@@ -174,6 +175,17 @@ includes the total amount of bytes that **eldim** uploaded, to OpenStack
 Swift backends. This number is different than the previous once since it
 includes encryption overhead, as well as the possibility of multiple OpenStack
 Swift backends, causing more data to be uploaded.
+
+### Client Identification Type
+eldim exports `eldim_client_id_type`, which is a counter vector, with the
+following label:
+
+#### type
+The `type` label contains the type of each successful authentication done
+against `eldim`. It contains two possible values: `ipaddr` and `password`. The
+first value is assigned every time a successful authentication is performed
+with an IP Address, and the second is assigned every time a successful
+authentication is performed with a password.
 
 ### Default Prometheus for Go Metrics
 The Prometheus Client Library for Go exports a heap of metrics by default,
@@ -330,6 +342,12 @@ The `ipv6` array is a list of strings with IPv6 addresses that belong to this
 host. The shortest format must be used, so `2001:db8::1` will work, but
 `2001:0db8:0000:0000:0000:0000:0000:0001` will not. They can be more than one.
 
+#### password
+The `password` string is a password that can be supplied by the `password` POST
+form element that can be used to lookup clients instead of by their IP Address.
+The `password` is checked before the IP Address of the host. For security
+reasons, the field **must** be between 32 and 128 characters in size.
+
 ### Example Configuration Files
 There are example configuration files that include all of the above commands
 in this repository. Feel free to start with them as your base, and then make
@@ -359,6 +377,13 @@ to be uploaded here.
 
 This API call will return `HTTP 200` and print `Ok` if the upload succeeded.
 Any other HTTP Status Code or message is an error.
+
+#### password
+This `POST` parameter is a string that specifies a password, which will be
+checked against `eldim`'s `clients.yml` and will identify hosts based on their
+password key, instead of their IP Address. Password checks take precedence over
+IP Address checks. The password must be between 32 and 128 characters for
+security reasons.
 
 ## How to upload data from a server
 You can basically upload files to eldim in any way you like, as long as you

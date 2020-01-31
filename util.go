@@ -32,6 +32,25 @@ func getIPName(ip string) (string, error) {
 }
 
 /*
+getPassName returns the client name for a given Password password. If it is not
+found, an error is returned.
+*/
+func getPassName(password string) (string, error) {
+
+	if password == "" {
+		return "", fmt.Errorf("Password was empty. Did not match")
+	}
+
+	for _, c := range clients {
+		if c.Password == password {
+			return c.Name, nil
+		}
+	}
+
+	return "", fmt.Errorf("Password did not match client database")
+}
+
+/*
 requestBasicAuth is an HTTP Handler wrapper that will require the passed handler to
 be served only if the HTTP Basic Authentication Credentials are correct.
 */

@@ -64,17 +64,34 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		logrus.Errorf("%s: Failed to parse Remote IP of request: %v", rid, err)
 	}
 
-	/* Check if the IP Address is a known and allowed client */
-	hostname, err := getIPName(ipAddr)
+	/* Check if the Password supplied is allowed and matches a host */
+	hostname, err := getPassName(r.PostFormValue("password"))
 	if err != nil {
-		logrus.Printf("%s: IP Address %s is not a known client", rid, ipAddr)
-		w.WriteHeader(http.StatusForbidden)
-		w.Header().Set("Content-Type", "text/plain")
-		fmt.Fprintf(w, "IP Address not in access list")
-		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "403"}).Inc()
-		promFileUpErrors.With(p.Labels{"error": "IP-Not-Allowed"}).Inc()
-		return
+		/*
+			This is the case in which the password that was supplied by
+			the user did not match any of the passwords in the database.
+
+			This means we need to do an IP-based check, and try and see
+			if this IP Address is allowed as a client.
+		*/
+		logrus.Printf("%s: Client at %s did not supply a known password. Checking by IP", rid, ipAddr)
+
+		hostname, err = getIPName(ipAddr)
+		if err != nil {
+			logrus.Printf("%s: IP Address %s is not a known client", rid, ipAddr)
+			w.WriteHeader(http.StatusForbidden)
+			w.Header().Set("Content-Type", "text/plain")
+			fmt.Fprintf(w, "IP Address not in access list")
+			promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "403"}).Inc()
+			promFileUpErrors.With(p.Labels{"error": "IP-Not-Allowed"}).Inc()
+			return
+		}
+
+		promClientIDs.With(p.Labels{"type": "ipaddr"}).Inc()
+	} else {
+		promClientIDs.With(p.Labels{"type": "password"}).Inc()
 	}
+
 	logrus.Printf("%s: Detected Hostname: %s", rid, hostname)
 
 	/* Begin file processing */

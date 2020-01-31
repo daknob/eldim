@@ -50,7 +50,8 @@ clientInfo is the data structure containing all information about
 a client that can connect to the eldim service
 */
 type clientInfo struct {
-	Name string   `yaml:"name"`
-	Ipv4 []string `yaml:"ipv4"`
-	Ipv6 []string `yaml:"ipv6"`
+	Name     string   `yaml:"name"`
+	Ipv4     []string `yaml:"ipv4"`
+	Ipv6     []string `yaml:"ipv6"`
+	Password string   `yaml:"password"`
 }
