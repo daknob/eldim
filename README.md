@@ -187,6 +187,23 @@ first value is assigned every time a successful authentication is performed
 with an IP Address, and the second is assigned every time a successful
 authentication is performed with a password.
 
+### Successful Authentications by Host Name
+eldim exports `eldim_host_authentications`, which is a counter vector, counting
+how many successful authentication attempts have happened so far, with the
+following label:
+
+#### hostname
+The `hostname` label contains the host name that has performed the
+authentication successfully.
+
+### Successful File Uploads by Host Name
+eldim exports `eldim_host_uploads`, which is a counter vector, counting how
+many successful file uploads have happened so far, with the following label:
+
+#### hostname
+The `hostname` label contains the host name that has performed the successful
+file upload.
+
 ### Default Prometheus for Go Metrics
 The Prometheus Client Library for Go exports a heap of metrics by default,
 which include, among others, Go Garbage Collection metrics, Goroutine Info,

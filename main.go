@@ -99,6 +99,24 @@ var (
 			"type",
 		},
 	)
+	promHostAuths = p.NewCounterVec(
+		p.CounterOpts{
+			Name: "eldim_host_authentications",
+			Help: "Successful authentications to eldim by hostname",
+		},
+		[]string{
+			"hostname",
+		},
+	)
+	promHostUploads = p.NewCounterVec(
+		p.CounterOpts{
+			Name: "eldim_host_uploads",
+			Help: "Successful file uploads to eldim by hostname",
+		},
+		[]string{
+			"hostname",
+		},
+	)
 )
 
 const (
@@ -173,6 +191,8 @@ func main() {
 	p.MustRegister(promBytesUploadedSuc)
 	p.MustRegister(promBytesUploadedOSS)
 	p.MustRegister(promClientIDs)
+	p.MustRegister(promHostAuths)
+	p.MustRegister(promHostUploads)
 
 	/* Set Prometheus Loaded Clients Metric */
 	var v4 float64 = 0

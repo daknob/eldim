@@ -92,7 +92,9 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		promClientIDs.With(p.Labels{"type": "password"}).Inc()
 	}
 
+	/* Authentication has happened successfully */
 	logrus.Printf("%s: Detected Hostname: %s", rid, hostname)
+	promHostAuths.With(p.Labels{"hostname": hostname}).Inc()
 
 	/* Begin file processing */
 	logrus.Printf("%s: Parsing upload from %s [%s]", rid, hostname, ipAddr)
@@ -364,5 +366,6 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	/* Update Prometheus on the successful request handling */
 	promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "200"}).Inc()
 	promReqServTimeHist.Observe(float64(time.Now().Unix() - now))
+	promHostUploads.With(p.Labels{"hostname": hostname}).Inc()
 
 }
