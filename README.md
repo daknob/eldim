@@ -344,7 +344,8 @@ host. The shortest format must be used, so `2001:db8::1` will work, but
 #### password
 The `password` string is a password that can be supplied by the `password` POST
 form element that can be used to lookup clients instead of by their IP Address.
-The `password` is checked before the IP Address of the host.
+The `password` is checked before the IP Address of the host. For security
+reasons, the field *must* be above 32 characters long.
 
 ### Example Configuration Files
 There are example configuration files that include all of the above commands
@@ -380,7 +381,7 @@ Any other HTTP Status Code or message is an error.
 This `POST` parameter is a string that specifies a password, which will be
 checked against `eldim`'s `clients.yml` and will identify hosts based on their
 password key, instead of their IP Address. Password checks take precedence over
-IP Address checks. The password must be between 20 and 128 characters for
+IP Address checks. The password must be between 32 and 128 characters for
 security reasons.
 
 ## How to upload data from a server
