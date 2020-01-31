@@ -88,7 +88,7 @@ file assumes the `eldim` user exists in the system.
 You can create such user by running:
 
 ```bash
-sudo adduser -s /usr/sbin/nologin -r -M eldim
+sudo useradd -s /usr/sbin/nologin -r -M eldim
 ```
 
 When executed, eldim has two command line flags that you can use to configure
