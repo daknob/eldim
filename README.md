@@ -346,7 +346,7 @@ host. The shortest format must be used, so `2001:db8::1` will work, but
 The `password` string is a password that can be supplied by the `password` POST
 form element that can be used to lookup clients instead of by their IP Address.
 The `password` is checked before the IP Address of the host. For security
-reasons, the field **must** be above 32 characters long.
+reasons, the field **must** be between 32 and 128 characters in size.
 
 ### Example Configuration Files
 There are example configuration files that include all of the above commands
