@@ -44,7 +44,12 @@ func main() {
 
 	logrus.Printf("Decrypting data...")
 
-	/* Create a new TripleSec cipher */
+	/*
+	   Create a new TripleSec cipher
+
+	   The number 4 being passed is the Cipher version, which is
+	   currently the latest version supported by TripleSec.
+	*/
 	cipher, err := triplesec.NewCipher([]byte(*encryptionKey), nil, 4)
 	if err != nil {
 		logrus.Fatalf("Failed to initialize the cryptographic engine: %v", err)
