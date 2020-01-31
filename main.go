@@ -177,6 +177,7 @@ func main() {
 	/* Set Prometheus Loaded Clients Metric */
 	var v4 float64
 	var v6 float64
+	var pass float64
 	var v4a float64
 	var v6a float64
 	for _, c := range clients {
@@ -188,9 +189,13 @@ func main() {
 			v6++
 			v6a += float64(len(c.Ipv6))
 		}
+		if c.Password != "" {
+			pass++
+		}
 	}
 	promClients.With(p.Labels{"type": "ipv6"}).Set(v6)
 	promClients.With(p.Labels{"type": "ipv4"}).Set(v4)
+	promClients.With(p.Labels{"type": "password"}).Set(pass)
 	promIPs.With(p.Labels{"version": "6"}).Set(v6a)
 	promIPs.With(p.Labels{"version": "4"}).Set(v4a)
 
