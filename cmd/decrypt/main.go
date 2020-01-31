@@ -45,7 +45,7 @@ func main() {
 	logrus.Printf("Decrypting data...")
 
 	/* Create a new TripleSec cipher */
-	cipher, err := triplesec.NewCipher([]byte(*encryptionKey), nil)
+	cipher, err := triplesec.NewCipher([]byte(*encryptionKey), nil, 4)
 	if err != nil {
 		logrus.Fatalf("Failed to initialize the cryptographic engine: %v", err)
 	}
