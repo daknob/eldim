@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"regexp"
 
@@ -105,15 +106,15 @@ func validateConfig(conf config) error {
 	}
 
 	/* Validate Client File */
-	cfile, err := ioutil.ReadFile(conf.ClientFile)
-	if err != nil {
-		return fmt.Errorf("Unable to read clients file: %v", err)
-	}
 
-	var clients []clientInfo
-	err = yaml.Unmarshal(cfile, &clients)
+	/*
+		For this part, since the Clients File is a separate file, we are using
+		a separate function, that will validate only the Clients file.
+	*/
+
+	err = validateClientsFile(conf.ClientFile)
 	if err != nil {
-		return fmt.Errorf("Unable to decode client file YAML: %v", err)
+		return fmt.Errorf("Failed to validate Clients File: %v", err)
 	}
 
 	/* Validate Max Upload RAM (in MB) */
@@ -167,4 +168,175 @@ func validateConfig(conf config) error {
 	}
 
 	return nil
+}
+
+/*
+validateClientsFile will validate the clients file that is passed and will
+return an error if something invalid is found. It may also log various warnings
+but it will not return an error in that case.
+*/
+func validateClientsFile(cfile string) error {
+
+	/* Check if a Clients File has been even configured */
+	if cfile == "" {
+		return fmt.Errorf("Did not supply clients file")
+	}
+
+	/* Attempt to read the Clients File */
+	fc, err := ioutil.ReadFile(cfile)
+	if err != nil {
+		return fmt.Errorf("Failed to open clients file: %v", err)
+	}
+
+	/* Unmarshal the YAML Clients File */
+	var clients []clientInfo
+
+	err = yaml.Unmarshal(fc, &clients)
+	if err != nil {
+		return fmt.Errorf("Unable to decode client file YAML: %v", err)
+	}
+
+	/* Check if clients have been supplied */
+	if len(clients) == 0 {
+		return fmt.Errorf("No clients have been supplied. eldim will not work")
+	}
+
+	/* Loop through all the clients in the client file */
+	for i := 0; i < len(clients); i++ {
+		c := clients[i]
+
+		/* Check if all clients have names */
+		if c.Name == "" {
+			return fmt.Errorf("Client %d has no name in Client File", i+1)
+		}
+
+		/* Ensure there aren't any duplicate names, IPs, passwords */
+		for j := i + 1; j < len(clients); j++ {
+			/* Check name */
+			if c.Name == clients[j].Name {
+				return fmt.Errorf(
+					"Clients %d and %d have the same name",
+					i+1, j+1,
+				)
+			}
+
+			/* Check for common IP Addresses */
+
+			/*
+				NOTE: A clever user may attempt to enter an IPv4 Address in one
+				of the IPv4 host arrays, and an IPv6-equivalent of the IPv4
+				Address in one of the IPv6 arrays. If we just compared the IPv4
+				Address and the IPv6 slices separately, this could bypass this
+				check. For this reason, we are joining the IPv4 and IPv6 Arrays
+				and then using the Equals function of the IP object, which,
+				explicitly, in its documentation, mentions that will be able to
+				flag them as equal. This also reduces the code.
+			*/
+
+			currentHostIPs := append(c.Ipv4, c.Ipv6...)
+			nextHostIPs := append(clients[j].Ipv4, clients[j].Ipv6...)
+
+			/* Run a quick check to ensure the address are not common */
+			for _, cip := range currentHostIPs {
+
+				/* Ensure the current IP is valid */
+				cipaddr := net.ParseIP(cip)
+				if cipaddr == nil {
+					return fmt.Errorf(
+						"Client \"%s\" (%d) does not have valid IP: \"%s\"",
+						c.Name, i+1,
+						cip,
+					)
+				}
+
+				for _, nip := range nextHostIPs {
+					/* Ensure the next IP is valid */
+					nipaddr := net.ParseIP(nip)
+					if nipaddr == nil {
+						return fmt.Errorf(
+							"Client \"%s\" (%d) does not have valid IP: \"%s\"",
+							clients[j].Name, j+1,
+							nip,
+						)
+					}
+
+					/* Ensure IPs are not equal */
+					if cipaddr.Equal(nipaddr) {
+						return fmt.Errorf(
+							"Clients \"%s\" and \"%s\" (%d,%d) have a common IP: %s",
+							c.Name, clients[j].Name,
+							i+1, j+1,
+							cipaddr.String(),
+						)
+					}
+				}
+			}
+
+			/* Check for common Passwords */
+			if c.Password == clients[j].Password {
+				return fmt.Errorf(
+					"Clients \"%s\" and \"%s\" (%d,%d) have the same password",
+					c.Name, clients[j].Name,
+					i+1, j+1,
+				)
+			}
+		}
+
+		/*
+			Check if IPv4 Addresses are in the IPv4 Array and if IPv6 Addresses
+			are in the IPv6 Array. Note that we have already verified the items
+			are valid IPs, so we can be a bit loose on our checks. The check is
+			also a bit more loose on purpose on the IPv6 part, so people who
+			don't want to separate the addresses between families can enter
+			everything in IPv6.
+		*/
+		for _, v4 := range c.Ipv4 {
+			if !regexp.MustCompile("^\\d+\\.\\d+\\.\\d+\\.\\d$").MatchString(v4) {
+				return fmt.Errorf(
+					"IP \"%s\" in host \"%s\" (%d) is not an IPv4 Address",
+					v4, c.Name, i+1,
+				)
+			}
+		}
+		for _, v6 := range c.Ipv6 {
+			if !regexp.MustCompile(":").MatchString(v6) {
+				return fmt.Errorf(
+					"IP \"%s\" in host \"%s\" (%d) is not an IPv6 Address",
+					v6, c.Name, i+1,
+				)
+			}
+		}
+
+		/*
+			Check if for every client there exists at least one of (IPv6, IPv4,
+			Password), otherwise this client cannot authenticate.
+		*/
+		if c.Password == "" && len(c.Ipv4) == 0 && len(c.Ipv6) == 0 {
+			return fmt.Errorf(
+				"Client \"%s\" does not have an authentication method: IP or Password required",
+				c.Name,
+			)
+		}
+
+		/* Enforce password policy */
+		if c.Password != "" {
+			if len(c.Password) < 32 {
+				return fmt.Errorf(
+					"Client \"%s\" (%d) has a short password",
+					c.Name, i+1,
+				)
+			}
+
+			if len(c.Password) > 128 {
+				return fmt.Errorf(
+					"Client \"%s\" (%d) has a too long password",
+					c.Name, i+1,
+				)
+			}
+		}
+	}
+
+	/* Hopefully no errors have occured */
+	return nil
+
 }
