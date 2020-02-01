@@ -51,8 +51,9 @@ func getPassName(password string) (string, error) {
 }
 
 /*
-requestBasicAuth is an HTTP Handler wrapper that will require the passed handler to
-be served only if the HTTP Basic Authentication Credentials are correct.
+requestBasicAuth is an HTTP Handler wrapper that will require the passed
+handler to be served only if the HTTP Basic Authentication Credentials are
+correct.
 */
 func requestBasicAuth(username, password, realm string, pa p.CounterVec, handler httprouter.Handle) httprouter.Handle {
 
@@ -69,11 +70,13 @@ func requestBasicAuth(username, password, realm string, pa p.CounterVec, handler
 		PassedPassword := sha256.Sum256([]byte(pass))
 
 		/*
-			subtle.ConstantTimeCompare is used so the username and password comparison take constant time,
-			and therefore do not leak information about the length of the password, or allow time-based side
-			channel attacks. However, in order to prevent password length guessing, SHA-256 is used, which is
-			always a constant size. Calculation of the SHA-256 hash can still be attacked, but isn't as likely,
-			since the inputs are constants.
+			subtle.ConstantTimeCompare is used so the username and password
+			comparison take constant time, and therefore do not leak
+			information about the length of the password, or allow time-based
+			side channel attacks. However, in order to prevent password length
+			guessing, SHA-256 is used, which is always a constant size.
+			Calculation of the SHA-256 hash can still be attacked, but isn't as
+			likely, since the inputs are constants.
 		*/
 		if !ok {
 			pa.With(p.Labels{"success": "false", "error": "HTTP-Basic-Auth-Not-Ok"}).Inc()
@@ -103,8 +106,8 @@ func requestBasicAuth(username, password, realm string, pa p.CounterVec, handler
 }
 
 /*
-httpHandlerToHTTPRouterHandler is a function that converts an HTTP Handler to an HTTPRouter Handler, ignoring
-the Params field and assuming it is not used
+httpHandlerToHTTPRouterHandler is a function that converts an HTTP Handler to
+an HTTPRouter Handler, ignoring the Params field and assuming it is not used
 */
 func httpHandlerToHTTPRouterHandler(h http.Handler) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
