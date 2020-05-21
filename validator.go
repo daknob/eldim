@@ -291,7 +291,7 @@ func validateClientsFile(cfile string) error {
 			everything in IPv6.
 		*/
 		for _, v4 := range c.Ipv4 {
-			if !regexp.MustCompile("^\\d+\\.\\d+\\.\\d+\\.\\d$").MatchString(v4) {
+			if !regexp.MustCompile("^\\d+\\.\\d+\\.\\d+\\.\\d+$").MatchString(v4) {
 				return fmt.Errorf(
 					"IP \"%s\" in host \"%s\" (%d) is not an IPv4 Address",
 					v4, c.Name, i+1,
