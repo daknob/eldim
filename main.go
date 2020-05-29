@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	p "github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/julienschmidt/httprouter"
@@ -86,30 +85,8 @@ func main() {
 	/* Register Prometheus Metrics */
 	registerPromMetrics()
 
-	/* Set Prometheus Loaded Clients Metric */
-	var v4 float64 = 0
-	var v6 float64 = 0
-	var pass float64 = 0
-	var v4a float64 = 0
-	var v6a float64 = 0
-	for _, c := range clients {
-		if len(c.Ipv4) >= 1 {
-			v4++
-			v4a += float64(len(c.Ipv4))
-		}
-		if len(c.Ipv6) >= 1 {
-			v6++
-			v6a += float64(len(c.Ipv6))
-		}
-		if c.Password != "" {
-			pass++
-		}
-	}
-	promClients.With(p.Labels{"type": "ipv6"}).Set(v6)
-	promClients.With(p.Labels{"type": "ipv4"}).Set(v4)
-	promClients.With(p.Labels{"type": "password"}).Set(pass)
-	promIPs.With(p.Labels{"version": "6"}).Set(v6a)
-	promIPs.With(p.Labels{"version": "4"}).Set(v4a)
+	/* Update configuration-based Metrics */
+	updateConfMetrics()
 
 	/* Various web server configurations */
 	logrus.Printf("Configuring the HTTP Server...")
