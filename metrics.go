@@ -98,6 +98,15 @@ var (
 			"hostname",
 		},
 	)
+	promEldimVersion = p.NewGaugeVec(
+		p.GaugeOpts{
+			Name: "eldim_server_version",
+			Help: "Each eldim server returns '1', with the software version as a tag",
+		},
+		[]string{
+			"eldimversion",
+		},
+	)
 )
 
 /* Register Prometheus Metrics */
@@ -114,6 +123,7 @@ func registerPromMetrics() {
 	p.MustRegister(promClientIDs)
 	p.MustRegister(promHostAuths)
 	p.MustRegister(promHostUploads)
+	p.MustRegister(promEldimVersion)
 }
 
 /* Update configuration-based Metrics */
@@ -142,4 +152,7 @@ func updateConfMetrics() {
 	promClients.With(p.Labels{"type": "password"}).Set(pass)
 	promIPs.With(p.Labels{"version": "6"}).Set(v6a)
 	promIPs.With(p.Labels{"version": "4"}).Set(v4a)
+
+	/* Set eldim version */
+	promEldimVersion.With(p.Labels{"eldimversion": version}).Set(1)
 }
