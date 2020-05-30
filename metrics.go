@@ -135,13 +135,13 @@ func updateConfMetrics() {
 	var v4a float64 = 0
 	var v6a float64 = 0
 	for _, c := range clients {
-		if len(c.Ipv4) >= 1 {
+		if len(c.IPv4()) >= 1 {
 			v4++
-			v4a += float64(len(c.Ipv4))
+			v4a += float64(len(c.IPv4()))
 		}
-		if len(c.Ipv6) >= 1 {
+		if len(c.IPv6()) >= 1 {
 			v6++
-			v6a += float64(len(c.Ipv6))
+			v6a += float64(len(c.IPv6()))
 		}
 		if c.Password != "" {
 			pass++

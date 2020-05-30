@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/daknob/eldim/config"
+
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/julienschmidt/httprouter"
@@ -16,8 +18,8 @@ import (
 )
 
 var (
-	conf    config
-	clients []clientInfo
+	conf    config.Config
+	clients []config.ClientConfig
 )
 
 const (
@@ -66,7 +68,7 @@ func main() {
 
 	/* Validate configuration by appropriate function call */
 	logrus.Printf("Validating parameters...")
-	err = validateConfig(conf)
+	err = conf.Validate()
 	if err != nil {
 		logrus.Fatalf("Invalid configuration: %v", err)
 	}

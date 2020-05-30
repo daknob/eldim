@@ -78,7 +78,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 
 		hostname, err = getIPName(ipAddr)
 		if err != nil {
-			logrus.Printf("%s: IP Address %s is not a known client", rid, ipAddr)
+			logrus.Printf("%s: IP Address %s is not a known client: %v", rid, ipAddr, err)
 			w.WriteHeader(http.StatusForbidden)
 			w.Header().Set("Content-Type", "text/plain")
 			fmt.Fprintf(w, "IP Address not in access list")
@@ -132,11 +132,11 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	var na []string
 	var ex []int
 	for _, be := range conf.SwiftBackends {
-		logrus.Printf("%s: Connecting to '%s'", rid, be.Name)
+		logrus.Printf("%s: Connecting to '%s'", rid, be.Name())
 
 		c := swift.Connection{
 			UserName:     be.Username,
-			ApiKey:       be.Apikey,
+			ApiKey:       be.APIKey,
 			AuthUrl:      be.AuthURL,
 			Domain:       "default",
 			Region:       be.Region,
@@ -146,15 +146,15 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 
 		err := c.Authenticate()
 		if err != nil {
-			logrus.Errorf("%s: Unable to connect to OpenStack Swift Backend '%s'", rid, be.Name)
+			logrus.Errorf("%s: Unable to connect to OpenStack Swift Backend '%s'", rid, be.Name())
 			promFileUpErrors.With(p.Labels{"error": "OpenStack-Swift-Backend-Connection-Error"}).Inc()
 			continue
 		}
 
-		logrus.Printf("%s: Successfully authenticated with OpenStack Swift Backend '%s'", rid, be.Name)
+		logrus.Printf("%s: Successfully authenticated with OpenStack Swift Backend '%s'", rid, be.Name())
 		sc = append(sc, &c)
 		co = append(co, be.Container)
-		na = append(na, be.Name)
+		na = append(na, be.Name())
 		ex = append(ex, be.ExpireSeconds)
 	}
 	if len(sc) == 0 {

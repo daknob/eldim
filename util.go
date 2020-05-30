@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"fmt"
+	"net"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -15,15 +16,15 @@ getIPName returns the client name of a given IP Address ip. If it is not found,
 an error is returned.
 */
 func getIPName(ip string) (string, error) {
+	naddr := net.ParseIP(ip)
+	if naddr == nil {
+		return "", fmt.Errorf("Invalid IP Address Given: %s", ip)
+	}
+
 	for _, c := range clients {
-		for _, v4 := range c.Ipv4 {
-			if v4 == ip {
-				return c.Name, nil
-			}
-		}
-		for _, v6 := range c.Ipv6 {
-			if v6 == ip {
-				return c.Name, nil
+		for _, ip := range append(c.IPv6(), c.IPv4()...) {
+			if ip.Equal(naddr) {
+				return c.Name(), nil
 			}
 		}
 	}
@@ -43,7 +44,7 @@ func getPassName(password string) (string, error) {
 
 	for _, c := range clients {
 		if c.Password == password {
-			return c.Name, nil
+			return c.Name(), nil
 		}
 	}
 
