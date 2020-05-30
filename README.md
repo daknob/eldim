@@ -1,23 +1,46 @@
 # eldim
-An OpenStack Swift File Upload Proxy
+An Secure File Upload Proxy
 
 ## Description
 eldim is a web server that accepts file uploads from a particular set of
-hosts, and its job is to encrypt them, and then store them in an OpenStack
-Swift backend system.
+hosts, and its job is to encrypt them, and then store them in an Object
+Storage backend system.
 
-It has a preconfigured ACL that only allows specific IP Addresses to access
-the file upload service. After a file is uploaded, it is encrypted with a
-symmetric key, and then uploaded to a configured Swift provider.
+It has a preconfigured ACL that only allows specific IP Addresses, or token
+bearers to access the file upload service. After a file is uploaded, it is
+encrypted with a symmetric key, and then uploaded to a configured provider.
 
 It has been designed to work as a standalone application, which means it must
 not sit behind a proxy, but instead be exposed directly to the Internet.
+
+## Groups & Mailing Lists
+Currently the project has two mailing lists, in Google Groups, that are used
+for communication:
+
+### eldim-announce
+The [eldim-announce](https://groups.google.com/forum/#!forum/eldim-announce)
+group is **recommended** for all users of eldim. It includes announcements
+for new versions, a changelog, as well as breaking changes that may occur
+in the future. Moreover, it is the place that will be used for security
+announcements in the future, if and when they come.
+
+This is a very low volume list, and it is read-only. That is, only eldim
+updates are posted there, and you cannot send e-mails to other members.
+
+### eldim-dev
+The [eldim-dev](https://groups.google.com/forum/#!forum/eldim-dev) group
+tries to address that final point above, and it is the techincal mailing
+list of the eldim project.
+
+This group can be used to report problems, share news, exchange ideas, etc.
+Basically it exists for communication about technical matters related to
+eldim, between the users, the contributors, or the developers.
 
 ## Design Decisions
 The design of eldim is data agnostic, and tries to push the relevant logic
 of all operations to the proper server. For example, the service itself does
 not care what types of files are uploaded, or when they're uploaded, or what
-they are. It simply receives a file, a file name, and then encrypts and
+they are. It simply receives a file and a file name, and then encrypts and
 uploads this file under a specific name to the Object Storage.
 
 In eldim's configuration file you can add a list of hosts, as well as their
@@ -56,9 +79,9 @@ effectively deleting everything.
 
 Finally, eldim works only over HTTPS. This decision is hard coded inside the
 server itself, and cannot be changed by the configuration file. A code change
-is required. It is configured to only work with TLSv1.2, the only currently
-secure version of TLS, but currently it may accept some more weak ciphers
-and not only the most secure ones.
+is required. It is configured to only work with at least TLSv1.2, the only
+currently secure versions of TLS, but currently it may accept some more weak
+ciphers and not only the most secure ones.
 
 ### Encryption
 For file encryption and decryption eldim uses a fairly known algorithm, called
@@ -160,7 +183,7 @@ request, or even more, depending on the configuration.
 During service startup, all information logged is related to actions and
 the configuration file, and is in plain text. After the service is started,
 all logs start with a UUID. This is called the Request ID. During the
-arrival of every request, eldim generated a unique identifier for this
+arrival of every request, eldim generates a unique identifier for this
 request. This identifier is included in every future log file entry that
 is related to this request.
 
