@@ -132,7 +132,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	var na []string
 	var ex []int
 	for _, be := range conf.SwiftBackends {
-		logrus.Printf("%s: Connecting to \"%s\"", rid, be.Name)
+		logrus.Printf("%s: Connecting to '%s'", rid, be.Name)
 
 		c := swift.Connection{
 			UserName:     be.Username,
@@ -146,12 +146,12 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 
 		err := c.Authenticate()
 		if err != nil {
-			logrus.Errorf("%s: Unable to connect to OpenStack Swift Backend \"%s\"", rid, be.Name)
+			logrus.Errorf("%s: Unable to connect to OpenStack Swift Backend '%s'", rid, be.Name)
 			promFileUpErrors.With(p.Labels{"error": "OpenStack-Swift-Backend-Connection-Error"}).Inc()
 			continue
 		}
 
-		logrus.Printf("%s: Successfully authenticated with OpenStack Swift Backend \"%s\"", rid, be.Name)
+		logrus.Printf("%s: Successfully authenticated with OpenStack Swift Backend '%s'", rid, be.Name)
 		sc = append(sc, &c)
 		co = append(co, be.Container)
 		na = append(na, be.Name)
@@ -173,7 +173,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	for i, sConn := range sc {
 		_, _, err := sConn.Object(co[i], fmt.Sprintf("%s/%s", hostname, r.PostFormValue("filename")))
 		if err != swift.ObjectNotFound {
-			logrus.Errorf("%s: File \"%s\" already exists", rid, r.PostFormValue("filename"))
+			logrus.Errorf("%s: File '%s' already exists", rid, r.PostFormValue("filename"))
 			w.WriteHeader(http.StatusBadRequest)
 			w.Header().Set("Content-Type", "text/plain")
 			fmt.Fprintf(w, "File already exists.")
@@ -265,7 +265,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 
 	err = os.Remove(newFilePath)
 	if err != nil {
-		logrus.Errorf("%s: Failed to delete temporary file at \"%s\": %v", rid, newFilePath, err)
+		logrus.Errorf("%s: Failed to delete temporary file at '%s': %v", rid, newFilePath, err)
 		os.Remove(newFilePath)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")

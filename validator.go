@@ -72,12 +72,12 @@ func validateConfig(conf config) error {
 			logrus.Warnf("Backend #%d does not have a name. It is encouraged to add one so you can find relevant errors easier in the logs.", n)
 		}
 		if be.ExpireSeconds < 0 {
-			return fmt.Errorf("Expire seconds cannot be negative for backend \"%s\" [%d]", be.Name, n)
+			return fmt.Errorf("Expire seconds cannot be negative for backend '%s' [%d]", be.Name, n)
 		}
 		if be.ExpireSeconds == 0 {
-			logrus.Warnf("You did not request file expiry for backend \"%s\"", be.Name)
+			logrus.Warnf("You did not request file expiry for backend '%s'", be.Name)
 		} else {
-			logrus.Warnf("You requested that all files on backend \"%s\" be deleted after %d seconds", be.Name, be.ExpireSeconds)
+			logrus.Warnf("You requested that all files on backend '%s' be deleted after %d seconds", be.Name, be.ExpireSeconds)
 		}
 
 		osConn := swift.Connection{
@@ -243,7 +243,7 @@ func validateClientsFile(cfile string) error {
 				cipaddr := net.ParseIP(cip)
 				if cipaddr == nil {
 					return fmt.Errorf(
-						"Client \"%s\" (%d) does not have valid IP: \"%s\"",
+						"Client '%s' (%d) does not have valid IP: '%s'",
 						c.Name, i+1,
 						cip,
 					)
@@ -254,7 +254,7 @@ func validateClientsFile(cfile string) error {
 					nipaddr := net.ParseIP(nip)
 					if nipaddr == nil {
 						return fmt.Errorf(
-							"Client \"%s\" (%d) does not have valid IP: \"%s\"",
+							"Client '%s' (%d) does not have valid IP: '%s'",
 							clients[j].Name, j+1,
 							nip,
 						)
@@ -263,7 +263,7 @@ func validateClientsFile(cfile string) error {
 					/* Ensure IPs are not equal */
 					if cipaddr.Equal(nipaddr) {
 						return fmt.Errorf(
-							"Clients \"%s\" and \"%s\" (%d,%d) have a common IP: %s",
+							"Clients '%s' and '%s' (%d,%d) have a common IP: %s",
 							c.Name, clients[j].Name,
 							i+1, j+1,
 							cipaddr.String(),
@@ -275,7 +275,7 @@ func validateClientsFile(cfile string) error {
 			/* Check for common Passwords */
 			if c.Password == clients[j].Password {
 				return fmt.Errorf(
-					"Clients \"%s\" and \"%s\" (%d,%d) have the same password",
+					"Clients '%s' and '%s' (%d,%d) have the same password",
 					c.Name, clients[j].Name,
 					i+1, j+1,
 				)
@@ -293,7 +293,7 @@ func validateClientsFile(cfile string) error {
 		for _, v4 := range c.Ipv4 {
 			if !regexp.MustCompile("^\\d+\\.\\d+\\.\\d+\\.\\d+$").MatchString(v4) {
 				return fmt.Errorf(
-					"IP \"%s\" in host \"%s\" (%d) is not an IPv4 Address",
+					"IP '%s' in host '%s' (%d) is not an IPv4 Address",
 					v4, c.Name, i+1,
 				)
 			}
@@ -301,7 +301,7 @@ func validateClientsFile(cfile string) error {
 		for _, v6 := range c.Ipv6 {
 			if !regexp.MustCompile(":").MatchString(v6) {
 				return fmt.Errorf(
-					"IP \"%s\" in host \"%s\" (%d) is not an IPv6 Address",
+					"IP '%s' in host '%s' (%d) is not an IPv6 Address",
 					v6, c.Name, i+1,
 				)
 			}
@@ -313,7 +313,7 @@ func validateClientsFile(cfile string) error {
 		*/
 		if c.Password == "" && len(c.Ipv4) == 0 && len(c.Ipv6) == 0 {
 			return fmt.Errorf(
-				"Client \"%s\" does not have an authentication method: IP or Password required",
+				"Client '%s' does not have an authentication method: IP or Password required",
 				c.Name,
 			)
 		}
@@ -322,14 +322,14 @@ func validateClientsFile(cfile string) error {
 		if c.Password != "" {
 			if len(c.Password) < 32 {
 				return fmt.Errorf(
-					"Client \"%s\" (%d) has a short password",
+					"Client '%s' (%d) has a short password",
 					c.Name, i+1,
 				)
 			}
 
 			if len(c.Password) > 128 {
 				return fmt.Errorf(
-					"Client \"%s\" (%d) has a too long password",
+					"Client '%s' (%d) has a too long password",
 					c.Name, i+1,
 				)
 			}
