@@ -21,7 +21,7 @@ type BackendConfig struct {
 }
 
 /*
-Validate validates the Openstack Swift Backend and returns the
+Validate validates the OpenStack Swift Backend and returns the
 first error that occured during validation.
 */
 func (conf *BackendConfig) Validate() error {
