@@ -139,7 +139,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 			promFileUpErrors.With(p.Labels{
 				"error": fmt.Sprintf(
 					"%s-Backend-Connection-Error",
-					strings.Replace(be.BackendName(), " ", "-", -1),
+					strings.ReplaceAll(be.BackendName(), " ", "-"),
 				),
 			}).Inc()
 			continue
@@ -327,7 +327,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 			logrus.Errorf("%s: Failed to upload %s to %s: %v", rid, uploadFileName, be.Name(), err)
 			promFileUpErrors.With(p.Labels{
 				"error": fmt.Sprintf(
-					"%s-Upload-Failed", strings.Replace(be.BackendName(), " ", "-", -1),
+					"%s-Upload-Failed", strings.ReplaceAll(be.BackendName(), " ", "-"),
 				),
 			}).Inc()
 		} else {
