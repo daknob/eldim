@@ -72,11 +72,11 @@ eldim exports `eldim_files_uploaded_bytes_successful`, which is a gauge,
 whose value contains the total amount of bytes since eldim launch that have
 been successfully uploaded and processed by eldim. This includes the sum of
 the size of all files uploaded **to** eldim.
-In addition to that, there's also `eldim_files_uploaded_bytes_swift`, which
-includes the total amount of bytes that **eldim** uploaded, to OpenStack
-Swift backends. This number is different than the previous once since it
-includes encryption overhead, as well as the possibility of multiple OpenStack
-Swift backends, causing more data to be uploaded.
+In addition to that, there's also `eldim_files_uploaded_bytes`, which
+includes the total amount of bytes that **eldim** uploaded, to the backends,
+tracked per backend type. This number is different than the previous once since it
+includes encryption overhead, as well as the possibility of multiple backends,
+causing more data to be uploaded.
 
 ### Client Identification Type
 eldim exports `eldim_client_id_type`, which is a counter vector, with the

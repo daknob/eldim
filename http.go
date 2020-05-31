@@ -332,7 +332,9 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 			}).Inc()
 		} else {
 			uploads++
-			promBytesUploadedOSS.Add(float64(len(encFile)))
+			promBytesUploaded.With(
+				p.Labels{"backendtype": strings.ReplaceAll(be.BackendName(), " ", "-")},
+			).Add(float64(len(encFile)))
 		}
 
 		/* Disconnect from Backend */

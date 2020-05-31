@@ -15,7 +15,7 @@ to eldim. Currently there are two parameters that are required:
 #### filename
 This is of type `string`, and must contain the desired name of the file.
 This can be anything, but spaces or symbols that are not normal for files
-are not recommended, since they may not be supported by the Swift backends.
+are not recommended, since they may not be supported by the backends.
 
 #### file
 This `POST` parameter is the actual file. Send the entire file here that has

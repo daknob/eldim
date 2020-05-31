@@ -65,10 +65,13 @@ var (
 			Help: "Amount of bytes of files uploaded to eldim successfully",
 		},
 	)
-	promBytesUploadedOSS = p.NewCounter(
+	promBytesUploaded = p.NewCounterVec(
 		p.CounterOpts{
-			Name: "eldim_files_uploaded_bytes_swift",
-			Help: "Amount of bytes of files uploaded from eldim to OpenStack Swift Backends",
+			Name: "eldim_files_uploaded_bytes",
+			Help: "Amount of bytes of files uploaded from eldim per Backend",
+		},
+		[]string{
+			"backendtype",
 		},
 	)
 	promClientIDs = p.NewCounterVec(
@@ -119,7 +122,7 @@ func registerPromMetrics() {
 	p.MustRegister(promClients)
 	p.MustRegister(promIPs)
 	p.MustRegister(promBytesUploadedSuc)
-	p.MustRegister(promBytesUploadedOSS)
+	p.MustRegister(promBytesUploaded)
 	p.MustRegister(promClientIDs)
 	p.MustRegister(promHostAuths)
 	p.MustRegister(promHostUploads)
