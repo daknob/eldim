@@ -1,12 +1,15 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/daknob/eldim/internal/backend"
 
 	"github.com/daknob/eldim/internal/swift"
 	"gopkg.in/yaml.v2"
@@ -203,6 +206,25 @@ func (conf *Config) Validate() error {
 	}
 
 	return nil
+}
+
+/*
+Clients returns all configured Backend Clients
+*/
+func (conf *Config) Clients() []backend.Client {
+	var ret []backend.Client
+
+	/* OpenStack Swift */
+	for _, be := range conf.SwiftBackends {
+		ret = append(ret,
+			swift.New(context.Background(),
+				be,
+			),
+		)
+	}
+
+	/* Return all clients */
+	return ret
 }
 
 /*

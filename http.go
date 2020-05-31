@@ -7,7 +7,10 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"time"
+
+	"github.com/daknob/eldim/internal/backend"
 
 	"github.com/daknob/hlog"
 	p "github.com/prometheus/client_golang/prometheus"
@@ -16,7 +19,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
-	"github.com/ncw/swift"
 	"github.com/sirupsen/logrus"
 )
 
@@ -125,54 +127,52 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		return
 	}
 
-	/* Connect to all Swift Backends */
-	logrus.Printf("%s: Connecting to OpenStack Swift Backends...", rid)
-	var sc []*swift.Connection
-	var co []string
-	var na []string
-	var ex []int
-	for _, be := range conf.SwiftBackends {
+	/* Connect to all Backends */
+	logrus.Printf("%s: Connecting to Backends...", rid)
+	var backends []backend.Client
+	for _, be := range conf.Clients() {
 		logrus.Printf("%s: Connecting to '%s'", rid, be.Name())
 
-		c := swift.Connection{
-			UserName:     be.Username,
-			ApiKey:       be.APIKey,
-			AuthUrl:      be.AuthURL,
-			Domain:       "default",
-			Region:       be.Region,
-			AuthVersion:  3,
-			EndpointType: swift.EndpointTypePublic,
-		}
-
-		err := c.Authenticate()
+		err := be.Connect(r.Context())
 		if err != nil {
-			logrus.Errorf("%s: Unable to connect to OpenStack Swift Backend '%s'", rid, be.Name())
-			promFileUpErrors.With(p.Labels{"error": "OpenStack-Swift-Backend-Connection-Error"}).Inc()
+			logrus.Errorf("%s: Unable to connect to %s Backend '%s': %v", rid, be.BackendName(), be.Name(), err)
+			promFileUpErrors.With(p.Labels{
+				"error": fmt.Sprintf(
+					"%s-Backend-Connection-Error",
+					strings.Replace(be.BackendName(), " ", "-", -1),
+				),
+			}).Inc()
 			continue
 		}
-
-		logrus.Printf("%s: Successfully authenticated with OpenStack Swift Backend '%s'", rid, be.Name())
-		sc = append(sc, &c)
-		co = append(co, be.Container)
-		na = append(na, be.Name())
-		ex = append(ex, be.ExpireSeconds)
+		logrus.Printf("%s: Successfully connected to %s Backend: %s", rid, be.BackendName(), be.Name())
+		backends = append(backends, be)
 	}
-	if len(sc) == 0 {
-		logrus.Errorf("%s: No OpenStack Swift Backend available to handle requests", rid)
+
+	if len(backends) == 0 {
+		logrus.Errorf("%s: No Backends available to handle requests", rid)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "An error occured while processing the uploaded file")
 		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
-		promFileUpErrors.With(p.Labels{"error": "No-Openstack-Swift-Backends-Available"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "No-Backends-Available"}).Inc()
 		return
 	}
-	logrus.Printf("%s: Connection successful. %d OpenStack Swift Backends live.", rid, len(sc))
+	logrus.Printf("%s: Connection successful. %d Backends live.", rid, len(backends))
 
 	/* Check if file exists in all available containers */
-	logrus.Printf("%s: Checking if file exists already in any OpenStack Swift Backend...", rid)
-	for i, sConn := range sc {
-		_, _, err := sConn.Object(co[i], fmt.Sprintf("%s/%s", hostname, r.PostFormValue("filename")))
-		if err != swift.ObjectNotFound {
+	logrus.Printf("%s: Checking if file exists already in any Backend...", rid)
+	for _, be := range backends {
+		exists, err := be.ObjectExists(r.Context(), fmt.Sprintf("%s/%s", hostname, r.PostFormValue("filename")))
+		if err != nil {
+			logrus.Errorf("%s: Failed to check if object exists for backend %s: %v", rid, be.Name(), err)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Header().Set("Content-Type", "text/plain")
+			fmt.Fprintf(w, "An error occured while processing the uploaded file")
+			promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
+			promFileUpErrors.With(p.Labels{"error": "Error-Check-If-Object-Exists-In-Backend"}).Inc()
+			return
+		}
+		if exists {
 			logrus.Errorf("%s: File '%s' already exists", rid, r.PostFormValue("filename"))
 			w.WriteHeader(http.StatusBadRequest)
 			w.Header().Set("Content-Type", "text/plain")
@@ -182,7 +182,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 			return
 		}
 	}
-	logrus.Printf("%s: File does not exist in any OpenStack Swift Backend.", rid)
+	logrus.Printf("%s: File does not exist in any Backend.", rid)
 
 	/* Save uploaded file to disk */
 	logrus.Printf("%s: Saving uploaded file to disk...", rid)
@@ -250,7 +250,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	logrus.Printf("%s: File successfully uploaded to %s", rid, newFilePath)
 	logrus.Printf("%s: Loading file into RAM to encrypt and upload...", rid)
 
-	/* Read file to RAM (byte array) so it can be used with TripleSec and Swift */
+	/* Read file to RAM (byte array) so it can be further handled */
 	upFile, err := ioutil.ReadFile(newFilePath)
 	if err != nil {
 		logrus.Errorf("%s: Failed to load file into RAM: %v", rid, err)
@@ -311,54 +311,46 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	upFile = []byte{}
 
 	logrus.Printf("%s: Encryption completed", rid)
-	logrus.Printf("%s: Uploading encrypted file to all OpenStack Swift Backends...", rid)
+	logrus.Printf("%s: Uploading encrypted file to all Backends...", rid)
 
 	/* All files are <hostname>/<desired_name> */
 	uploadFileName := fmt.Sprintf("%s/%s", hostname, r.PostFormValue("filename"))
 	/* Counts successful uploads */
 	uploads := 0
 
-	/* For every os swift backend */
-	for i, be := range sc {
-		logrus.Printf("%s: Uploading %s to %s", rid, uploadFileName, na[i])
+	/* For every backend */
+	for _, be := range backends {
+		logrus.Printf("%s: Uploading %s to %s", rid, uploadFileName, be.Name())
 
-		/* Upload actual file */
-		err := be.ObjectPutBytes(co[i], uploadFileName, encFile, "application/octet-stream")
+		err := be.UploadFile(r.Context(), uploadFileName, &encFile)
 		if err != nil {
-			logrus.Errorf("%s: Failed to upload %s to %s: %v", rid, uploadFileName, na[i], err)
-			promFileUpErrors.With(p.Labels{"error": "OpenStack-Swift-Upload-Failed"}).Inc()
+			logrus.Errorf("%s: Failed to upload %s to %s: %v", rid, uploadFileName, be.Name(), err)
+			promFileUpErrors.With(p.Labels{
+				"error": fmt.Sprintf(
+					"%s-Upload-Failed", strings.Replace(be.BackendName(), " ", "-", -1),
+				),
+			}).Inc()
 		} else {
 			uploads++
 			promBytesUploadedOSS.Add(float64(len(encFile)))
 		}
 
-		/* Set the expiry header */
-		if ex[i] != 0 {
-			err := be.ObjectUpdate(co[i], uploadFileName, map[string]string{
-				"X-Delete-After": fmt.Sprintf("%d", ex[i]),
-			})
-			if err != nil {
-				logrus.Errorf("%s: Failed to set expiry for file %s to %d seconds", rid, uploadFileName, ex[i])
-				promFileUpErrors.With(p.Labels{"error": "OpenStack-Swift-Expiry-Set-Failed"}).Inc()
-			}
-		}
-
-		/* Unauthenticate just to be sure */
-		be.UnAuthenticate()
+		/* Disconnect from Backend */
+		be.Disconnect(r.Context())
 	}
 
 	/* Check if at least one file was uploaded */
 	if uploads == 0 {
-		logrus.Errorf("%s: Did not manage to upload to any OpenStack Swift Backends!", rid)
+		logrus.Errorf("%s: Did not manage to upload to any Backends!", rid)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Failed to store file.")
 		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
-		promFileUpErrors.With(p.Labels{"error": "OpenStack-Swift-All-Uploads-Failed"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "All-Uploads-Failed"}).Inc()
 	}
 
 	/* All good, finally it's over */
-	logrus.Printf("%s: Uploaded encrypted file to %d OpenStack Swift Backends", rid, uploads)
+	logrus.Printf("%s: Uploaded encrypted file to %d Backends", rid, uploads)
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "text/plain")
 	fmt.Fprintf(w, "Ok")

@@ -1,6 +1,7 @@
 package swift
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/ncw/swift"
@@ -43,30 +44,24 @@ func (conf *BackendConfig) Validate() error {
 	}
 
 	/* Attempt to connect to OpenStack Swift Backend */
-	osConn := swift.Connection{
-		UserName:     conf.Username,
-		ApiKey:       conf.APIKey,
-		AuthUrl:      conf.AuthURL,
-		Domain:       "default",
-		Region:       conf.Region,
-		AuthVersion:  3,
-		EndpointType: swift.EndpointTypePublic,
-		UserAgent:    "eldim",
-	}
+	client := New(context.Background(), *conf)
 
-	err := osConn.Authenticate()
+	err := client.Connect(context.Background())
 	if err != nil {
 		return fmt.Errorf("Failed to authenticate to Backend: %v", err)
 	}
 
 	/* Check if container (bucket) exists */
-	_, _, err = osConn.Container(conf.Container)
+	exists, err := client.BucketExists(context.Background(), conf.Container)
 	if err != nil {
 		return fmt.Errorf("OpenStack Swift Backend Container Error: %v", err)
 	}
+	if !exists {
+		return fmt.Errorf("OpenStack Swift Container does not exist: %s", conf.Container)
+	}
 
 	/* Disconnect from OpenStack */
-	osConn.UnAuthenticate()
+	client.Disconnect(context.Background())
 
 	return nil
 }
@@ -79,4 +74,125 @@ func (conf *BackendConfig) Name() string {
 		conf.BackendName = "Unnamed Openstack Swift Backend"
 	}
 	return conf.BackendName
+}
+
+/*
+Client is an OpenStack Swift Client Object
+*/
+type Client struct {
+	Conn   swift.Connection
+	Config BackendConfig
+}
+
+/*
+New creates a new OpenStack Swift client
+*/
+func New(ctx context.Context, conf BackendConfig) *Client {
+	var ret Client
+	ret.Config = conf
+	ret.Conn = swift.Connection{
+		UserName:     conf.Username,
+		ApiKey:       conf.APIKey,
+		AuthUrl:      conf.AuthURL,
+		Domain:       "default",
+		Region:       conf.Region,
+		AuthVersion:  3,
+		EndpointType: swift.EndpointTypePublic,
+		UserAgent:    "eldim",
+	}
+	return &ret
+}
+
+/*
+Connect connects the OpenStack Swift client to the backend
+service and authenticates
+*/
+func (c *Client) Connect(ctx context.Context) error {
+	return c.Conn.Authenticate()
+}
+
+/*
+Disconnect terminates the connection of the OpenStack Swift
+client with the backend server
+*/
+func (c *Client) Disconnect(ctx context.Context) error {
+	c.Conn.UnAuthenticate()
+	return nil
+}
+
+/*
+BucketExists returns if a particular bucket exists and is
+reachable by the OpenStack Swift client
+*/
+func (c *Client) BucketExists(ctx context.Context, name string) (bool, error) {
+	_, _, err := c.Conn.Container(name)
+	if err == swift.ContainerNotFound {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("Failed to check if bucket exists: %v", err)
+	}
+
+	return true, nil
+}
+
+/*
+ObjectExists returns if a particular object exists and is
+reachable by the OpenStack Swift client
+*/
+func (c *Client) ObjectExists(ctx context.Context, name string) (bool, error) {
+	_, _, err := c.Conn.Object(c.Bucket(), name)
+	if err == swift.ObjectNotFound {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("Failed to check if object exists: %v", err)
+	}
+
+	return true, nil
+}
+
+/*
+Name returns the OpenStack Swift Client Name
+*/
+func (c *Client) Name() string {
+	return c.Config.Name()
+}
+
+/*
+Bucket returns the OpenStack Swift Container Name
+*/
+func (c *Client) Bucket() string {
+	return c.Config.Container
+}
+
+/*
+BackendName returns 'OpenStack Swift'
+*/
+func (c *Client) BackendName() string {
+	return "OpenStack Swift"
+}
+
+/*
+UploadFile uploads a file to the OpenStack Swift Backend, with
+a name of name.
+*/
+func (c *Client) UploadFile(ctx context.Context, name string, file *[]byte) error {
+	/* Upload file */
+	err := c.Conn.ObjectPutBytes(c.Bucket(), name, *file, "application/octet-stream")
+	if err != nil {
+		return fmt.Errorf("Failed to upload file: %v", err)
+	}
+
+	/* Set expiration date */
+	if c.Config.ExpireSeconds != 0 {
+		err := c.Conn.ObjectUpdate(c.Bucket(), name, map[string]string{
+			"X-Delete-After": fmt.Sprintf("%d", c.Config.ExpireSeconds),
+		})
+		if err != nil {
+			return fmt.Errorf("Failed to set expiry date for file %s to %d", name, c.Config.ExpireSeconds)
+		}
+	}
+
+	return nil
 }
