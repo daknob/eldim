@@ -1,5 +1,5 @@
 # eldim
-An Secure File Upload Proxy
+A Secure File Upload Proxy
 
 ## Description
 eldim is a web server that accepts file uploads from a particular set of
