@@ -78,4 +78,9 @@ swiftbackends:
     container: "my-logs-hot"
     expireseconds: 2592000
 
-
+# All the Google Cloud Storage Backends
+gcsbackends:
+  -
+    name: "Example Google Cloud Storage Backend"
+    bucketname: "eldim-is-awesome"
+    credsfile: "/etc/eldim/gcs-credentials.json"

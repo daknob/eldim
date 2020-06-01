@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/daknob/eldim/internal/gcs"
+
 	"github.com/daknob/eldim/internal/backend"
 
 	"github.com/daknob/eldim/internal/swift"
@@ -30,6 +32,7 @@ type Config struct {
 
 	/* Backend Server */
 	SwiftBackends []swift.BackendConfig `yaml:"swiftbackends"`
+	GCSBackends   []gcs.BackendConfig   `yaml:"gcsbackends"`
 
 	/* Clients */
 	ClientFile string `yaml:"clientfile"`
@@ -92,9 +95,15 @@ func (conf *Config) Validate() error {
 			return fmt.Errorf("Failed to validate OpenStack Swift Backend '%s': %v", b.Name(), err)
 		}
 	}
+	for _, b := range conf.GCSBackends {
+		err := b.Validate()
+		if err != nil {
+			return fmt.Errorf("Failed to validate Google Cloud Storage Backend '%s': %v", b.Name(), err)
+		}
+	}
 
 	/* Ensure there is at least one backend */
-	if len(conf.SwiftBackends) == 0 {
+	if len(conf.SwiftBackends)+len(conf.GCSBackends) == 0 {
 		return fmt.Errorf("eldim needs at least one backend to operate, 0 found")
 	}
 
@@ -218,6 +227,15 @@ func (conf *Config) Clients() []backend.Client {
 	for _, be := range conf.SwiftBackends {
 		ret = append(ret,
 			swift.New(context.Background(),
+				be,
+			),
+		)
+	}
+
+	/* Google Cloud Storage */
+	for _, be := range conf.GCSBackends {
+		ret = append(ret,
+			gcs.New(context.Background(),
 				be,
 			),
 		)

@@ -77,10 +77,10 @@ for the Prometheus metrics endpoint (`/metrics`). It needs to be a-z, A-Z, 0-9,
 and 20-128 characters long, for security reasons.
 
 #### swiftbackends
-The `swiftbackends` is an array, which contains a list of all backends that
-eldim will upload data to. More than one data storage is supported, but if you
-add too many it may take excessive amounts of bandwidth and time to complete
-the operations.
+The `swiftbackends` is an array, which contains a list of all OpenStack Swift
+backends that eldim will upload data to. More than one data storage is
+supported, but if you add too many it may take excessive amounts of bandwidth
+and time to complete the operations.
 
 The fields of each array element are below:
 
@@ -123,6 +123,36 @@ same provider two times, one with a hot storage container, and an expiry of
 a week for example, or a month, and one with a cold storage container, and an
 expiry of months or years. That way you can keep the most recent files
 immediately available, while older files will take more time to be retrieved.
+
+#### gcsbackends
+The `gcsbackends` is an array that contains a list of all Google Cloud Storage
+backends that eldim will upload data to. You can specify more than one backend
+if you want, such as one per region. Unlike the `swiftbackends`, this does not
+support `eldim`-based file expiration and instead it must be configured from
+the Google Cloud Console. There you can find a much more flexible way which
+also includes storage class options, and gives you the ability to keep files
+in hot storage for 30 days, and then progressively move to colder and colder
+storage types, until their eventual deletion.
+
+The fields of each array element are:
+
+##### name
+The `name` parameter is a friendly name that you set to identify this backend
+in eldim's logs, as well as its configuration file. It can be any string.
+
+##### bucketname
+The `bucketname` parameter is the Google Cloud Storage bucket's name that you
+intend to upload all the data to. This must already exist and be configured
+before you start using it.
+
+##### credsfile
+The `credsfile` parameter includes the full path to the location of your
+service account's Google Cloud Storage credentials. It should be a JSON file
+that contains inside it all the information needed for eldim to establish a
+connection and authenticate properly. You can obtain this file by going to
+*IAM & Admin* in Google Cloud Console, clicking *Service Accounts*, and then
+creating one. When prompted, download the JSON secret file, and use this to
+deploy eldim with.
 
 ### clients.yml
 This configuration file contains all the hosts that are authorized to upload
