@@ -91,7 +91,8 @@ the backend service and authenticates
 */
 func (c *Client) Connect(ctx context.Context) error {
 	gcl, err := storage.NewClient(ctx,
-		option.WithCredentialsFile(c.Config.CredentialsFile))
+		option.WithCredentialsFile(c.Config.CredentialsFile),
+		option.WithUserAgent("eldim"))
 	if err != nil {
 		return fmt.Errorf("Failed to connect to GCS: %v", err)
 	}
