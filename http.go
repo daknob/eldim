@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -322,7 +323,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	for _, be := range backends {
 		logrus.Printf("%s: Uploading %s to %s", rid, uploadFileName, be.Name())
 
-		err := be.UploadFile(r.Context(), uploadFileName, &encFile)
+		err := be.UploadFile(context.Background(), uploadFileName, &encFile)
 		if err != nil {
 			logrus.Errorf("%s: Failed to upload %s to %s: %v", rid, uploadFileName, be.Name(), err)
 			promFileUpErrors.With(p.Labels{
