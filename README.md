@@ -6,6 +6,8 @@ eldim is a web server that accepts file uploads from a particular set of
 hosts, and its job is to encrypt them, and then store them in an Object
 Storage backend system.
 
+![The eldim flow of data](docs/img/flow.svg)
+
 It has a preconfigured ACL that only allows specific IP Addresses, or token
 bearers to access the file upload service. After a file is uploaded, it is
 encrypted with a symmetric key, and then uploaded to a configured provider.
