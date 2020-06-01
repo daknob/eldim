@@ -106,6 +106,15 @@ many successful file uploads have happened so far, with the following label:
 The `hostname` label contains the host name that has performed the successful
 file upload.
 
+### eldim Server Version
+eldim exports the `eldim_server_version`, which is always set to `1`. This
+metric is a vector, with the label `eldimversion`, which is always set to
+the current version that the server is running. This will allow the operator
+to collect a time series metric of which eldim version was running at a
+particular time, and also, if there are more than one eldim servers being
+used and monitored, to show the distribution of versions across the server
+cluster.
+
 ### Default Prometheus for Go Metrics
 The Prometheus Client Library for Go exports a heap of metrics by default,
 which include, among others, Go Garbage Collection metrics, Goroutine Info,
