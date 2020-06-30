@@ -1,8 +1,9 @@
 # eldim decypt tool
 
 The `decrypt` tool of eldim is used to decrypt data that have been encrypted
-during upload. It cannot download data from the OpenStack Swift backends, it
-just decrypts files from the local system.
+during upload. It cannot download data from the various backends, it reads
+the files from the local file system, so you need to download them before
+using it.
 
 ## Usage
 Using `decrypt` is really simple. After you have the `decrypt` binary, just
