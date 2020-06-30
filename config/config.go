@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/daknob/eldim/internal/gcs"
+	"github.com/daknob/eldim/internal/s3"
 
 	"github.com/daknob/eldim/internal/backend"
 
@@ -33,6 +34,7 @@ type Config struct {
 	/* Backend Server */
 	SwiftBackends []swift.BackendConfig `yaml:"swiftbackends"`
 	GCSBackends   []gcs.BackendConfig   `yaml:"gcsbackends"`
+	S3Backends    []s3.BackendConfig    `yaml:"s3backends"`
 
 	/* Clients */
 	ClientFile string `yaml:"clientfile"`
@@ -101,9 +103,15 @@ func (conf *Config) Validate() error {
 			return fmt.Errorf("Failed to validate Google Cloud Storage Backend '%s': %v", b.Name(), err)
 		}
 	}
+	for _, b := range conf.S3Backends {
+		err := b.Validate()
+		if err != nil {
+			return fmt.Errorf("Failed to validate S3 Backend '%s': %v", b.Name(), err)
+		}
+	}
 
 	/* Ensure there is at least one backend */
-	if len(conf.SwiftBackends)+len(conf.GCSBackends) == 0 {
+	if len(conf.SwiftBackends)+len(conf.GCSBackends)+len(conf.S3Backends) == 0 {
 		return fmt.Errorf("eldim needs at least one backend to operate, 0 found")
 	}
 
@@ -236,6 +244,15 @@ func (conf *Config) Clients() []backend.Client {
 	for _, be := range conf.GCSBackends {
 		ret = append(ret,
 			gcs.New(context.Background(),
+				be,
+			),
+		)
+	}
+
+	/* S3 */
+	for _, be := range conf.S3Backends {
+		ret = append(ret,
+			s3.New(context.Background(),
 				be,
 			),
 		)

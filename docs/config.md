@@ -154,6 +154,45 @@ connection and authenticate properly. You can obtain this file by going to
 creating one. When prompted, download the JSON secret file, and use this to
 deploy eldim with.
 
+#### s3backends
+The `s3backends` is an array that contains a list of all S3 backends that
+eldim will upload data to. You can specify more than one backend if you want,
+such as one per region. Like `gcsbackends`, this does not support eldim-based
+file expiration, and instead it must be configured from the S3 provider web
+console. Most providers offer lifecycle options for their service.
+
+The fields of each array element are:
+
+##### name
+The `name` parameter is a friendly name that you can set to identify this
+backend in eldim's logs, as well as its configuration file. It can be any
+string.
+
+##### endpoint
+The `endpoint` parameter is a string containing the domain name at which the
+S3 backend server is available. It should not include protocols like `https://`
+in front of it. The endpoint **MUST** support TLS, as eldim only makes
+encrypted connections to this server. This behavior cannot be changed.
+
+##### region
+The `region` parameter is a string that contains the name of the Region that
+the S3 bucket is using. In some servers, like Amazon's, this is what is used
+to differentiate between regions, and the endpoint is the same. In some other
+ones like Scaleway, the endpoint is different for every region, but the region
+still must be set, otherwise they will reject the request. And finally, in
+others, like Minio, the region string is disregarded completely.
+
+##### bucketname
+The `bucketname` parameter is a string that contains the S3 Bucket name. This
+must already exist beforehand and must be configured properly.
+
+##### accesskey
+##### secretkey
+The `accesskey` and `secretkey` parameters are what's used to authenticate
+and authorize eldim to the S3 server. They are provided together as a pair
+from the S3 operator. You need to ensure that eldim has appropriate
+permissions under the user it is running as, otherwise it will not work.
+
 ### clients.yml
 This configuration file contains all the hosts that are authorized to upload
 data to eldim. It is recommended to store this in `/etc/eldim/clients.yml`,
