@@ -115,6 +115,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		promFileUpErrors.With(p.Labels{"error": "Multipart-Form-Parse-Error"}).Inc()
 		return
 	}
+	defer r.MultipartForm.RemoveAll()
 	logrus.Printf("%s: Done parsing upload", rid)
 
 	/* Check if a file name has been provided */
