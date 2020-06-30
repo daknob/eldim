@@ -50,7 +50,7 @@ func (conf *BackendConfig) Validate() error {
 		return fmt.Errorf("Google Cloud Storage Container does not exist: %s", conf.Bucket)
 	}
 
-	/* Disconnect from OpenStack */
+	/* Disconnect from Google Cloud Storage */
 	client.Disconnect(context.Background())
 
 	return nil
