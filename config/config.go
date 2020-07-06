@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strings"
 
+	"filippo.io/age"
+	"filippo.io/age/agessh"
 	"github.com/daknob/eldim/internal/gcs"
 	"github.com/daknob/eldim/internal/s3"
 
@@ -39,11 +41,12 @@ type Config struct {
 	/* Clients */
 	ClientFile string `yaml:"clientfile"`
 
-	/* System */
-	TempUploadPath string `yaml:"tempuploadpath"`
-
 	/* Encryption */
-	EncryptionKey string `yaml:"encryptionkey"`
+	EncryptionKey string `yaml:"encryptionkey"` // Deprecated in eldim v0.6.0
+	Encryption    struct {
+		AgeID  []string `yaml:"age-id"`
+		AgeSSH []string `yaml:"age-ssh"`
+	} `yaml:"encryption"`
 
 	/* Prometheus Metrics */
 	PrometheusEnabled  bool   `yaml:"prometheusenabled"`
@@ -120,26 +123,24 @@ func (conf *Config) Validate() error {
 		return fmt.Errorf("Maximum Upload RAM must be a positive number")
 	}
 
-	/* Validate Temporary Upload Path */
-	if conf.TempUploadPath == "" {
-		return fmt.Errorf("You must supply a temporary upload path for uploaded files")
-	}
-	f, err = os.Create(fmt.Sprintf("%s/tmp", conf.TempUploadPath))
-	if err != nil {
-		return fmt.Errorf("Error writing files to the temporary upload path: %v", err)
-	}
-	f.Close()
-	err = os.Remove(fmt.Sprintf("%s/tmp", conf.TempUploadPath))
-	if err != nil {
-		return fmt.Errorf("Error deleting file from the temporary upload path: %v", err)
-	}
-
 	/* Validate Encryption Key */
-	if conf.EncryptionKey == "" {
-		return fmt.Errorf("You must supply an encryption key to encrypt all uploaded files")
+	if conf.EncryptionKey != "" {
+		return fmt.Errorf("Use of encryption key is deprecated since v0.6.0. Please consult the docs")
 	}
-	if len(conf.EncryptionKey) < 16 {
-		return fmt.Errorf("You must supply an encryption key of at least 16 characters")
+	if len(conf.Encryption.AgeID)+len(conf.Encryption.AgeSSH) == 0 {
+		return fmt.Errorf("Please configure at least one age encryption key")
+	}
+	for _, r := range conf.Encryption.AgeID {
+		_, err := age.ParseX25519Recipient(r)
+		if err != nil {
+			return fmt.Errorf("Failed to parse age Identity '%s': %v", r, err)
+		}
+	}
+	for _, r := range conf.Encryption.AgeSSH {
+		_, err := agessh.ParseRecipient(r)
+		if err != nil {
+			return fmt.Errorf("Failed to parse age ssh key Identity '%s': %v", r, err)
+		}
 	}
 
 	/* Validate Prometheus Settings */

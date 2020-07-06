@@ -40,7 +40,15 @@ tempuploadpath: "/var/lib/eldim"
 #####
 
 # The encryption password to use for all file uploads
-encryptionkey: "Insecure"
+# encryptionkey: "Insecure" (DEPRECATED)
+
+# Public Keys that will be able to decrypt uploaded files
+encryption:
+  age-id:
+    - "age17w2a6ad6cccx5kenanamr72e9qzgt5d7vqhvq8rrxx8pc3qt53vq70un5p"
+  age-ssh:
+    - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMAvJvMq0gej+uXqINFrrbqAElw2h32qyxGEBG8ef7vn a-comment"
+    - "ssh-rsa AAAAB3RSAKeysAreTooLongSoISnippedThisSorrytlCx+PAaDpsD3yQ== another-comment"
 
 #####
 # Prometheus

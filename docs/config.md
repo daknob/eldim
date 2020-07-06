@@ -48,18 +48,28 @@ The `clientfile` parameter contains the path to the configuration file that
 includes all clients who are authorized to upload data to eldim. More on
 that file below.
 
-#### tempuploadpath
-The `tempuploadpath` parameter contains the path the server will upload
-files to, for a brief period of time, before they are encrypted and then
-uploaded. Depending on the file size, most uploads will not be here for more
-than a few seconds, however in cases of unexpected server termination, some
-unencrypted data may remain here.
+#### encryption
+The `encryption` part of the configuration file contains all the required
+information in order to encrypt the files uploaded to eldim. Essentially it
+contains all the public keys that will be used to encrypt the files uploaded.
+Please note that **ANY** key will be able to decrypt the file, and the number
+of them does not increase encryption time, but increases the uploaded file's
+size by a few bytes.
+It has the following two configuration data points:
 
-#### encryptionkey
-The `encryptionkey` is a string that will be used to generate the encrypted
-files' symmetric key. Anyone who has access to this key can decrypt all files
-that have been encrypted by eldim. Try to keep this a secret, and do not
-transmit it insecurely.
+##### age-id
+The `age-id` is a list of strings that contains all
+[age](https://age-encryption.org/) identities which will be able to decrypt
+files uploaded to eldim. They start with `age` and can be generated using
+`age-keygen`. Make sure to use the **Public Key** and not the private key.
+
+##### age-ssh
+The `age-ssh` is a list of strings that contains SSH keys of type RSA
+(`ssh-rsa`) or Ed25519 (`ssh-ed25519`) which will be able to decrypt files
+uploaded to eldim. The full SSH key needs to be included, such as, for
+example
+`ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMAvJvMq0gej+uXqINFrrbqAElw2h32qyxGEBG8ef7vn comment`.
+As you can see, comments can be included as well.
 
 #### prometheusenabled
 The `prometheusenabled` is a boolean value. If it has the value `true`, it

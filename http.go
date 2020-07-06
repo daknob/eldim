@@ -1,24 +1,23 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
+	"filippo.io/age"
+	"filippo.io/age/agessh"
 	"github.com/daknob/eldim/internal/backend"
 
 	"github.com/daknob/hlog"
 	p "github.com/prometheus/client_golang/prometheus"
 
-	"github.com/keybase/go-triplesec"
-
-	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
 )
@@ -186,11 +185,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	}
 	logrus.Printf("%s: File does not exist in any Backend.", rid)
 
-	/* Save uploaded file to disk */
-	logrus.Printf("%s: Saving uploaded file to disk...", rid)
-
-	newFilePath := fmt.Sprintf("%s/%s.dat", conf.TempUploadPath, uuid.New().String())
-
+	/* Process uploaded file */
 	file, _, err := r.FormFile("file")
 	if err != nil {
 		logrus.Errorf("%s: Uploaded File Error: %v", rid, err)
@@ -202,115 +197,105 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		return
 	}
 
-	nfile, err := os.OpenFile(
-		newFilePath,
-		os.O_RDWR|os.O_CREATE,
-		0600,
-	)
+	/*
+	 * Determine the uploaded file size in bytes
+	 * In this case "file" is not an *os.File, unless it did not
+	 * fit in memory and had to be written to disk. So using stat
+	 * to determine the size is not reliable. We have to use seek
+	 * instead, and then restore to the beginning of the file.
+	 */
+	uploadSize, err := file.Seek(0, os.SEEK_END)
 	if err != nil {
-		logrus.Errorf("%s: Failed to create local file for upload: %v", rid, err)
+		logrus.Fatalf("Failed to get file size: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
-		fmt.Fprintf(w, "Failed to save file.")
+		fmt.Fprintf(w, "An error occurred while processing the uploaded file.")
 		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
-		promFileUpErrors.With(p.Labels{"error": "File-Creation-Failed"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "File-Seek-To-End-Failed"}).Inc()
 		return
 	}
 
-	_, err = io.Copy(nfile, file)
+	_, err = file.Seek(0, os.SEEK_SET)
 	if err != nil {
-		logrus.Errorf("%s: Failed to copy uploaded file to disk: %v", rid, err)
+		logrus.Fatalf("Failed to get file size: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
-		fmt.Fprintf(w, "Failed to save file.")
+		fmt.Fprintf(w, "An error occurred while processing the uploaded file.")
 		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
-		promFileUpErrors.With(p.Labels{"error": "File-Copy-Failed"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "File-Seek-To-Start-Failed"}).Inc()
 		return
 	}
 
-	err = file.Close()
-	if err != nil {
-		logrus.Errorf("%s: Failed to close open file: %v", rid, err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Header().Set("Content-Type", "text/plain")
-		fmt.Fprintf(w, "Failed to save file.")
-		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
-		promFileUpErrors.With(p.Labels{"error": "File-Close-Failed-IO-Error-Old"}).Inc()
-		return
-	}
-	err = nfile.Close()
-	if err != nil {
-		logrus.Errorf("%s: Failed to close open file: %v", rid, err)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Header().Set("Content-Type", "text/plain")
-		fmt.Fprintf(w, "Failed to save file.")
-		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
-		promFileUpErrors.With(p.Labels{"error": "File-Close-Failed-IO-Error-New"}).Inc()
-		return
-	}
-
-	logrus.Printf("%s: File successfully uploaded to %s", rid, newFilePath)
-	logrus.Printf("%s: Loading file into RAM to encrypt and upload...", rid)
-
-	/* Read file to RAM (byte array) so it can be further handled */
-	upFile, err := ioutil.ReadFile(newFilePath)
-	if err != nil {
-		logrus.Errorf("%s: Failed to load file into RAM: %v", rid, err)
-		os.Remove(newFilePath)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Header().Set("Content-Type", "text/plain")
-		fmt.Fprintf(w, "Failed to save file.")
-		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
-		promFileUpErrors.With(p.Labels{"error": "File-Read-Failed"}).Inc()
-		return
-	}
-
-	err = os.Remove(newFilePath)
-	if err != nil {
-		logrus.Errorf("%s: Failed to delete temporary file at '%s': %v", rid, newFilePath, err)
-		os.Remove(newFilePath)
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Header().Set("Content-Type", "text/plain")
-		fmt.Fprintf(w, "Failed to save file.")
-		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
-		promFileUpErrors.With(p.Labels{"error": "File-Delete-Failed"}).Inc()
-		return
-	}
-
-	logrus.Printf("%s: File loaded into RAM. Size: %d bytes.", rid, len(upFile))
-	promBytesUploadedSuc.Add(float64(len(upFile)))
+	logrus.Printf("%s: File uploaded. Size: %d bytes.", rid, uploadSize)
+	promBytesUploadedSuc.Add(float64(uploadSize))
 	logrus.Printf("%s: Encrypting file...", rid)
 
-	/*
-	   Create a new TripleSec Cipher, with a nil salt (required)
+	/* Load all Recipients from configuration */
+	var rcpt []age.Recipient
+	for _, r := range conf.Encryption.AgeID {
+		ar, err := age.ParseX25519Recipient(r)
+		if err != nil {
+			logrus.Errorf("%s: Failed to parse age ID Recipient: %v", rid, err)
+			continue
+		}
+		rcpt = append(rcpt, age.Recipient(ar))
+	}
+	for _, r := range conf.Encryption.AgeSSH {
+		ar, err := agessh.ParseRecipient(r)
+		if err != nil {
+			logrus.Errorf("%s: Failed to parse age SSH Recipient: %v", rid, err)
+			continue
+		}
+		rcpt = append(rcpt, age.Recipient(ar))
+	}
 
-	   The number 4 being passed is the Cipher version, with 4 being
-	   currently the latest version according to the documentation.
-	*/
-	enc, err := triplesec.NewCipher([]byte(conf.EncryptionKey), nil, 4)
-	if err != nil {
-		logrus.Errorf("%s: Failed to initialize the encryption algorithm: %v", rid, err)
+	if len(rcpt) == 0 {
+		logrus.Errorf("%s: No recipients could be parsed from the configuration file", rid)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Failed to encrypt file.")
 		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
-		promFileUpErrors.With(p.Labels{"error": "Failed-To-Initialize-TripleSec"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "No-Valid-Age-Recipients-Found"}).Inc()
 		return
 	}
 
-	/* Encrypt the file: takes a byte array, returns a byte array, 2*sizeof(file) in RAM */
-	encFile, err := enc.Encrypt(upFile)
+	/* Initialize age for encryption */
+	encBuff := &bytes.Buffer{}
+
+	ew, err := age.Encrypt(encBuff, rcpt...)
 	if err != nil {
-		logrus.Errorf("%s: Failed to encrypt the file: %v", rid, err)
+		logrus.Errorf("%s: Failed to initialize encryption: %v", rid, err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Failed to encrypt file.")
 		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
-		promFileUpErrors.With(p.Labels{"error": "Failed-To-Encrypt-File-TripleSec"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "Failed-To-Initialize-Age-Encryption"}).Inc()
 		return
 	}
 
-	upFile = []byte{}
+	/* Encrypt file */
+	wb, err := io.Copy(ew, file)
+	if err != nil || wb != uploadSize {
+		logrus.Errorf("%s: Encryption failed, expected %d bytes ciphertext, got %d: %v", rid, uploadSize, wb, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "text/plain")
+		fmt.Fprintf(w, "Failed to encrypt file.")
+		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "Failed-To-Encrypt-File"}).Inc()
+		return
+	}
+
+	if ew.Close() != nil {
+		logrus.Errorf("%s: Encryption failed: %v", rid, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "text/plain")
+		fmt.Fprintf(w, "Failed to encrypt file.")
+		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "Failed-To-Encrypt-File-Close"}).Inc()
+		return
+	}
+
+	encrSize := int64(encBuff.Len())
 
 	logrus.Printf("%s: Encryption completed", rid)
 	logrus.Printf("%s: Uploading encrypted file to all Backends...", rid)
@@ -324,7 +309,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	for _, be := range backends {
 		logrus.Printf("%s: Uploading %s to %s", rid, uploadFileName, be.Name())
 
-		err := be.UploadFile(context.Background(), uploadFileName, &encFile)
+		err := be.UploadFile(context.Background(), uploadFileName, bytes.NewReader(encBuff.Bytes()), encrSize)
 		if err != nil {
 			logrus.Errorf("%s: Failed to upload %s to %s: %v", rid, uploadFileName, be.Name(), err)
 			promFileUpErrors.With(p.Labels{
@@ -336,12 +321,15 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 			uploads++
 			promBytesUploaded.With(
 				p.Labels{"backendtype": strings.ReplaceAll(be.BackendName(), " ", "-")},
-			).Add(float64(len(encFile)))
+			).Add(float64(encrSize))
 		}
 
 		/* Disconnect from Backend */
 		be.Disconnect(r.Context())
 	}
+
+	/* Reset the file buffer */
+	encBuff.Reset()
 
 	/* Check if at least one file was uploaded */
 	if uploads == 0 {
@@ -351,6 +339,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		fmt.Fprintf(w, "Failed to store file.")
 		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
 		promFileUpErrors.With(p.Labels{"error": "All-Uploads-Failed"}).Inc()
+		return
 	}
 
 	/* All good, finally it's over */

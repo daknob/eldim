@@ -3,6 +3,7 @@ package gcs
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
@@ -165,13 +166,13 @@ func (c *Client) BackendName() string {
 UploadFile uploads a file to the Google Cloud Storage
 Backend, with a name of name.
 */
-func (c *Client) UploadFile(ctx context.Context, name string, file *[]byte) error {
+func (c *Client) UploadFile(ctx context.Context, name string, file io.Reader, filesize int64) error {
 
 	w := c.Conn.Bucket(c.Bucket()).Object(name).NewWriter(ctx)
 	w.ObjectAttrs.ContentType = "application/octet-stream"
-	_, err := w.Write(*file)
-	if err != nil {
-		return fmt.Errorf("Failed to write to object: %v", err)
+	wb, err := io.Copy(w, file)
+	if err != nil || wb != filesize {
+		return fmt.Errorf("Failed to write to object (expected: %d B, written: %d B): %v", filesize, wb, err)
 	}
 	err = w.Close()
 	if err != nil {

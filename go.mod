@@ -4,9 +4,9 @@ go 1.14
 
 require (
 	cloud.google.com/go/storage v1.8.0
+	filippo.io/age v1.0.0-beta4
 	github.com/daknob/hlog v0.1.0
 	github.com/go-ini/ini v1.57.0 // indirect
-	github.com/google/uuid v1.1.1
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/keybase/go-crypto v0.0.0-20200123153347-de78d2cb44f4 // indirect
 	github.com/keybase/go-triplesec v0.0.0-20200218020411-6687d79e9f55

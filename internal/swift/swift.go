@@ -3,6 +3,7 @@ package swift
 import (
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/ncw/swift"
 )
@@ -177,21 +178,14 @@ func (c *Client) BackendName() string {
 UploadFile uploads a file to the OpenStack Swift Backend, with
 a name of name.
 */
-func (c *Client) UploadFile(ctx context.Context, name string, file *[]byte) error {
-	/* Upload file */
-	err := c.Conn.ObjectPutBytes(c.Bucket(), name, *file, "application/octet-stream")
-	if err != nil {
-		return fmt.Errorf("Failed to upload file: %v", err)
-	}
+func (c *Client) UploadFile(ctx context.Context, name string, file io.Reader, filesize int64) error {
 
-	/* Set expiration date */
-	if c.Config.ExpireSeconds != 0 {
-		err := c.Conn.ObjectUpdate(c.Bucket(), name, map[string]string{
+	_, err := c.Conn.ObjectPut(c.Bucket(), name, file, false, "",
+		"application/octet-stream", map[string]string{
 			"X-Delete-After": fmt.Sprintf("%d", c.Config.ExpireSeconds),
 		})
-		if err != nil {
-			return fmt.Errorf("Failed to set expiry date for file %s to %d", name, c.Config.ExpireSeconds)
-		}
+	if err != nil {
+		return fmt.Errorf("Failed to upload file: %v", err)
 	}
 
 	return nil

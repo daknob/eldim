@@ -10,7 +10,7 @@ Storage backend system.
 
 It has a preconfigured ACL that only allows specific IP Addresses, or token
 bearers to access the file upload service. After a file is uploaded, it is
-encrypted with a symmetric key, and then uploaded to a configured provider.
+encrypted, and then uploaded to a configured provider.
 
 It has been designed to work as a standalone application, which means it must
 not sit behind a proxy, but instead be exposed directly to the Internet.
@@ -86,18 +86,29 @@ currently secure versions of TLS, but currently it may accept some more weak
 ciphers and not only the most secure ones.
 
 ### Encryption
-For file encryption and decryption eldim uses a fairly known algorithm, called
-[TripleSec](https://keybase.io/triplesec/). It is essentially three
-cryptographic algorithms combined into a single library. It uses AES, Salsa20,
-and Twofish.
+Since version v0.6.0, eldim uses [age](https://age-encryption.org/) for file
+encryption. It is a well defined protocol, with multiple implementations, a
+very good CLI tool, and is already part of some operating system distributions.
+More importantly, it is modern, well-designed, and opinionated, with one and
+only one purpose in mind: encrypt files. It uses state of the art practices
+and algorithms, and is also very flexible.
 
-It is entirely overkill for the purposes of this tool, but it is a simple and
-nice library that exposes a single function for encryption, and everything is
-handled automatically. There's no need to do HMACs, hashes, padding, IVs, or
-anything, and works quite well. It also comes with its own storage format,
-so the only output is a byte array that's just written to a file. However,
-TripleSec is the reason uploads may need up to `2*sizeof(file)` in terms of
-RAM.
+age is using asymmetric encryption, which means that eldim only needs to know
+about the **public** keys in its configuration file, and never needs or has
+access to the *private* keys. This vastly reduces the risk of a compromised
+eldim server, as files uploaded cannot be decrypted by the attacker.
+
+With age, eldim supports multiple public keys, so you can use more than one,
+and have the files encrypted with all of them. That means that files can be
+decrypted with **any** of the keys. You can use this functionality to have
+backup keys, or give access to multiple people, each one holding their own
+key pair. Unfortunately, eldim currently does not support *M of N* so you
+need to keep this in mind while threat modelling.
+
+To generate an age keypair, you can use the `age-keygen` CLI tool. However,
+a very nice feature is that eldim also supports SSH keys! You can use your
+RSA or Ed25519 SSH keys in addition to the age keys. A single eldim server
+supports multiple keys, of different types.
 
 ## How to run eldim
 eldim runs as a daemon, since it has to listen for HTTPS requests
@@ -162,16 +173,16 @@ values for `X` are eldim's domain TTL * 2, or something similar.
 
 eldim is designed to work without placing trust on the file upload servers.
 If, however, you want to not have to trust the eldim server either, you can
-optionally encrypt all data sent to eldim with `gpg`. That way eldim won't
-be able to decrypt them, but neither will the sender alone.
+optionally encrypt all data sent to eldim with `age` (or `gpg`). That way
+eldim won't be able to decrypt them, but neither will the sender alone.
 
-To encrypt files with `gpg`, use:
+To encrypt files with `age`, use:
 
 ```bash
-cat file.tgz | gpg -e -r "recipient@example.com" > out.tgz.enc
+cat file.tgz | age -r "AgeID" > out.tgz.enc
 ```
 
-This requires that you have a key that you trust for `recipient@example.com`.
+Of course, you need to replace "AgeID" with an age recipient address.
 
 ## eldim Logs
 Currently eldim logs a lot of information in detail. This is done on purpose
@@ -191,26 +202,3 @@ is related to this request.
 
 By default eldim logs to `stdout` and `stderr`, so if you are using the
 provided `systemd` unit file, all its logs will be available in `syslog`.
-
-## Limitations
-There are a few known limitations of eldim that will hopefully be resolved
-in future versions. The most notable ones are:
-
-### High RAM Usage
-Due to the way the encryption function and the data upload function works,
-each uploaded file may exist in memory one or two times. That means that if
-you upload a 100 MB file, this request alone may need up to 200 MB of RAM
-to be served. There are some small optimizations to generally require only
-one copy of the file in memory, but right now for a few ms / sec two copies
-may exist at the same time.
-
-This is the most serious limitation of eldim. It can limit the number of
-parallel requests very quickly, depending on the server RAM and the file
-sizes.
-
-### Symmetric Encryption
-Since encryption is symmetric, the key to decrypt all files must always be
-stored in the eldim configuration file. If the eldim server is hacked,
-attackers may be able to obtain this and be able to decrypt all backups. This
-can be a problem since the API keys are also stored in the exact same file,
-and can give them access to the files themselves.

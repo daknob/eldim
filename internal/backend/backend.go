@@ -1,6 +1,9 @@
 package backend
 
-import "context"
+import (
+	"context"
+	"io"
+)
 
 /*
 Config is the interface that is required by
@@ -26,5 +29,5 @@ type Client interface {
 	Bucket() string
 	BackendName() string
 
-	UploadFile(ctx context.Context, name string, file *[]byte) error
+	UploadFile(ctx context.Context, name string, file io.Reader, filesize int64) error
 }

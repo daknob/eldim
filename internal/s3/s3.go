@@ -1,9 +1,9 @@
 package s3
 
 import (
-	"bytes"
 	"context"
 	"fmt"
+	"io"
 
 	"github.com/minio/minio-go"
 )
@@ -165,18 +165,16 @@ func (c *Client) BackendName() string {
 UploadFile uploads a file to the
 S3 Backend, with a name of name.
 */
-func (c *Client) UploadFile(ctx context.Context, name string, file *[]byte) error {
+func (c *Client) UploadFile(ctx context.Context, name string, file io.Reader, filesize int64) error {
 
-	size := int64(len(*file))
-
-	wr, err := c.Conn.PutObjectWithContext(ctx, c.Config.Bucket, name, bytes.NewReader(*file), size, minio.PutObjectOptions{
+	wr, err := c.Conn.PutObjectWithContext(ctx, c.Config.Bucket, name, file, filesize, minio.PutObjectOptions{
 		ContentType: "application/octet-stream",
 	})
 	if err != nil {
 		return fmt.Errorf("Failed to upload file: %v", err)
 	}
-	if size != wr {
-		return fmt.Errorf("Bytes uploaded is not the same as file size: %d vs %d", wr, size)
+	if filesize != wr {
+		return fmt.Errorf("Bytes uploaded is not the same as file size: %d vs %d", wr, filesize)
 	}
 
 	return nil

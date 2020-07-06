@@ -1,9 +1,11 @@
 # eldim decypt tool
 
 The `decrypt` tool of eldim is used to decrypt data that have been encrypted
-during upload. It cannot download data from the various backends, it reads
+during upload, of all versions of eldim prior to v0.6.0 that use the TripleSec
+encryption algorithm. It cannot download data from the various backends, it reads
 the files from the local file system, so you need to download them before
-using it.
+using it. For all files encrypted with eldim version v0.6.0 or later, you
+need to use [age](https://age-encryption.org/) and its tools to decrypt.
 
 ## Usage
 Using `decrypt` is really simple. After you have the `decrypt` binary, just
