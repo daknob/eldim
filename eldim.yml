@@ -3,7 +3,7 @@
 #####
 
 # The port to listen for HTTPS requests on
-listenport: 8443
+listenport: 31337
 
 # Show or hide eldim information from HTTP headers
 servertokens: true
