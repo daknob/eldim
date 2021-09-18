@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/minio/minio-go"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
 /*
@@ -37,7 +38,13 @@ func (conf *BackendConfig) Validate() error {
 	}
 
 	/* Attempt to connect to the Backend */
-	mc, err := minio.NewWithRegion(conf.Endpoint, conf.AccessKey, conf.SecretKey, true, conf.Region)
+	mc, err := minio.New(conf.Endpoint, &minio.Options{
+		Creds: credentials.NewStaticV4(
+			conf.AccessKey,
+			conf.SecretKey, ""),
+		Secure: true,
+		Region: conf.Region,
+	})
 	if err != nil {
 		return fmt.Errorf("Failed to connect to Backend: %v", err)
 	}
@@ -46,7 +53,7 @@ func (conf *BackendConfig) Validate() error {
 	mc.SetAppInfo("eldim", "")
 
 	/* Check if bucket exists */
-	exists, err := mc.BucketExists(conf.Bucket)
+	exists, err := mc.BucketExists(context.Background(), conf.Bucket)
 	if err != nil {
 		return fmt.Errorf("Failed to check if bucket exists: %v", err)
 	}
@@ -92,8 +99,13 @@ the backend service and authenticates
 */
 func (c *Client) Connect(ctx context.Context) error {
 	/* Create new S3 Client */
-	mc, err := minio.NewWithRegion(c.Config.Endpoint, c.Config.AccessKey,
-		c.Config.SecretKey, true, c.Config.Region)
+	mc, err := minio.New(c.Config.Endpoint, &minio.Options{
+		Creds: credentials.NewStaticV4(
+			c.Config.AccessKey,
+			c.Config.SecretKey, ""),
+		Secure: true,
+		Region: c.Config.Region,
+	})
 	if err != nil {
 		return fmt.Errorf("Failed to connect to S3: %v", err)
 	}
@@ -118,7 +130,7 @@ BucketExists returns if a particular bucket exists and is
 reachable by the S3 client
 */
 func (c *Client) BucketExists(ctx context.Context, name string) (bool, error) {
-	return c.Conn.BucketExists(name)
+	return c.Conn.BucketExists(ctx, name)
 }
 
 /*
@@ -127,7 +139,7 @@ reachable by the S3 client
 */
 func (c *Client) ObjectExists(ctx context.Context, name string) (bool, error) {
 
-	_, err := c.Conn.StatObject(c.Config.Bucket, name, minio.StatObjectOptions{})
+	_, err := c.Conn.StatObject(ctx, c.Config.Bucket, name, minio.StatObjectOptions{})
 	if err != nil {
 		switch minio.ToErrorResponse(err).Code {
 		case "NoSuchKey":
@@ -167,14 +179,14 @@ S3 Backend, with a name of name.
 */
 func (c *Client) UploadFile(ctx context.Context, name string, file io.Reader, filesize int64) error {
 
-	wr, err := c.Conn.PutObjectWithContext(ctx, c.Config.Bucket, name, file, filesize, minio.PutObjectOptions{
+	uinfo, err := c.Conn.PutObject(ctx, c.Config.Bucket, name, file, filesize, minio.PutObjectOptions{
 		ContentType: "application/octet-stream",
 	})
 	if err != nil {
 		return fmt.Errorf("Failed to upload file: %v", err)
 	}
-	if filesize != wr {
-		return fmt.Errorf("Bytes uploaded is not the same as file size: %d vs %d", wr, filesize)
+	if filesize != uinfo.Size {
+		return fmt.Errorf("Bytes uploaded is not the same as file size: %d vs %d", uinfo.Size, filesize)
 	}
 
 	return nil
