@@ -203,6 +203,21 @@ and authorize eldim to the S3 server. They are provided together as a pair
 from the S3 operator. You need to ensure that eldim has appropriate
 permissions under the user it is running as, otherwise it will not work.
 
+##### sendcontentmd5
+The `sendcontentmd5` parameter is a boolean that controls whether `eldim` will
+send the `Content-MD5` HTTP Header to the S3 backend.  Typically this is not
+required since `eldim` uses HTTPS, but some backends like the Backblaze B2
+service require it, depending on your configuration (e.g. if you use "Object
+Lock"). You can enable it regardless of whether it is needed or not, and
+`eldim` will calculate the MD5 sum of the file to be uploaded and then attach
+it with the request to upload the file. In theory this can detect corrupted
+files between `eldim` and the S3 provider, but this is already being taken care
+of by TLS. If the server supports and checks it, it will detect corruption in
+uploaded files. If it doesn't check it, it will be ignored. Enabling this
+setting will increase CPU usage (an averae Intel core can do ~2 GB/s of MD5) as
+well as memory usage (as this happens in RAM). It is disabled by default and
+only recommended to be enabled if required by the provider.
+
 ### clients.yml
 This configuration file contains all the hosts that are authorized to upload
 data to eldim. It is recommended to store this in `/etc/eldim/clients.yml`,

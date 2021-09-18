@@ -116,3 +116,4 @@ s3backends:
     bucketname: "b2-bucket-name"
     accesskey: "AppKey-keyID"
     secretkey: "AppKey-applicationKey"
+    sendcontentmd5: true # If you use Object Lock (>=1d), this is mandatory

@@ -20,6 +20,7 @@ type BackendConfig struct {
 	Region      string `yaml:"region"`
 	AccessKey   string `yaml:"accesskey"`
 	SecretKey   string `yaml:"secretkey"`
+	SendMD5     bool   `yaml:"sendcontentmd5"`
 }
 
 /*
@@ -180,7 +181,8 @@ S3 Backend, with a name of name.
 func (c *Client) UploadFile(ctx context.Context, name string, file io.Reader, filesize int64) error {
 
 	uinfo, err := c.Conn.PutObject(ctx, c.Config.Bucket, name, file, filesize, minio.PutObjectOptions{
-		ContentType: "application/octet-stream",
+		ContentType:    "application/octet-stream",
+		SendContentMd5: c.Config.SendMD5,
 	})
 	if err != nil {
 		return fmt.Errorf("Failed to upload file: %v", err)
