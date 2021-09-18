@@ -29,13 +29,6 @@ tlskey: "/etc/letsencrypt/live/eldim.example.com/privkey.pem"
 clientfile: "/etc/eldim/clients.yml"
 
 #####
-# System
-#####
-
-# Temporary File Upload Path
-tempuploadpath: "/var/lib/eldim"
-
-#####
 # Encryption 
 #####
 
