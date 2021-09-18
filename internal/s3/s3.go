@@ -35,7 +35,7 @@ func (conf *BackendConfig) Validate() error {
 
 	/* Check if all details are supplied */
 	if conf.Endpoint == "" || conf.Bucket == "" || conf.AccessKey == "" || conf.SecretKey == "" || conf.Region == "" {
-		return fmt.Errorf("All fields are required for S3 backends to work")
+		return fmt.Errorf("all fields are required for S3 backends to work")
 	}
 
 	/* Attempt to connect to the Backend */
@@ -47,7 +47,7 @@ func (conf *BackendConfig) Validate() error {
 		Region: conf.Region,
 	})
 	if err != nil {
-		return fmt.Errorf("Failed to connect to Backend: %v", err)
+		return fmt.Errorf("failed to connect to Backend: %v", err)
 	}
 
 	/* Set appropriate app information */
@@ -56,10 +56,10 @@ func (conf *BackendConfig) Validate() error {
 	/* Check if bucket exists */
 	exists, err := mc.BucketExists(context.Background(), conf.Bucket)
 	if err != nil {
-		return fmt.Errorf("Failed to check if bucket exists: %v", err)
+		return fmt.Errorf("failed to check if bucket exists: %v", err)
 	}
 	if !exists {
-		return fmt.Errorf("Bucket does not exist: %s", conf.Bucket)
+		return fmt.Errorf("bucket does not exist: %s", conf.Bucket)
 	}
 
 	return nil
@@ -108,7 +108,7 @@ func (c *Client) Connect(ctx context.Context) error {
 		Region: c.Config.Region,
 	})
 	if err != nil {
-		return fmt.Errorf("Failed to connect to S3: %v", err)
+		return fmt.Errorf("failed to connect to S3: %v", err)
 	}
 
 	/* Set App Info */
@@ -146,7 +146,7 @@ func (c *Client) ObjectExists(ctx context.Context, name string) (bool, error) {
 		case "NoSuchKey":
 			return false, nil
 		default:
-			return false, fmt.Errorf("Failed checking if object exists: %v", err)
+			return false, fmt.Errorf("failed checking if object exists: %v", err)
 		}
 	}
 
@@ -185,10 +185,10 @@ func (c *Client) UploadFile(ctx context.Context, name string, file io.Reader, fi
 		SendContentMd5: c.Config.SendMD5,
 	})
 	if err != nil {
-		return fmt.Errorf("Failed to upload file: %v", err)
+		return fmt.Errorf("failed to upload file: %v", err)
 	}
 	if filesize != uinfo.Size {
-		return fmt.Errorf("Bytes uploaded is not the same as file size: %d vs %d", uinfo.Size, filesize)
+		return fmt.Errorf("bytes uploaded is not the same as file size: %d vs %d", uinfo.Size, filesize)
 	}
 
 	return nil

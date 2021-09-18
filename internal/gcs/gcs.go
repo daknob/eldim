@@ -31,7 +31,7 @@ func (conf *BackendConfig) Validate() error {
 
 	/* Check if all details are supplied */
 	if conf.CredentialsFile == "" || conf.Bucket == "" {
-		return fmt.Errorf("All fields are required for Google Cloud Storage backends to work")
+		return fmt.Errorf("all fields are required for Google Cloud Storage backends to work")
 	}
 
 	/* Attempt to connect to the Backend */
@@ -39,7 +39,7 @@ func (conf *BackendConfig) Validate() error {
 
 	err := client.Connect(context.Background())
 	if err != nil {
-		return fmt.Errorf("Failed to authenticate to Backend: %v", err)
+		return fmt.Errorf("failed to authenticate to Backend: %v", err)
 	}
 
 	/* Check if the bucket exists */
@@ -95,7 +95,7 @@ func (c *Client) Connect(ctx context.Context) error {
 		option.WithCredentialsFile(c.Config.CredentialsFile),
 		option.WithUserAgent("eldim"))
 	if err != nil {
-		return fmt.Errorf("Failed to connect to GCS: %v", err)
+		return fmt.Errorf("failed to connect to GCS: %v", err)
 	}
 	c.Conn = gcl
 	return nil
@@ -119,7 +119,7 @@ func (c *Client) BucketExists(ctx context.Context, name string) (bool, error) {
 		return false, nil
 	}
 	if err != nil {
-		return false, fmt.Errorf("Failed to check if bucket exists: %v", err)
+		return false, fmt.Errorf("failed to check if bucket exists: %v", err)
 	}
 
 	return true, nil
@@ -135,7 +135,7 @@ func (c *Client) ObjectExists(ctx context.Context, name string) (bool, error) {
 		return false, nil
 	}
 	if err != nil {
-		return false, fmt.Errorf("Failed to check if object exists: %v", err)
+		return false, fmt.Errorf("failed to check if object exists: %v", err)
 	}
 
 	return true, nil
@@ -172,11 +172,11 @@ func (c *Client) UploadFile(ctx context.Context, name string, file io.Reader, fi
 	w.ObjectAttrs.ContentType = "application/octet-stream"
 	wb, err := io.Copy(w, file)
 	if err != nil || wb != filesize {
-		return fmt.Errorf("Failed to write to object (expected: %d B, written: %d B): %v", filesize, wb, err)
+		return fmt.Errorf("failed to write to object (expected: %d B, written: %d B): %v", filesize, wb, err)
 	}
 	err = w.Close()
 	if err != nil {
-		return fmt.Errorf("Failed to upload file: %v", err)
+		return fmt.Errorf("failed to upload file: %v", err)
 	}
 
 	return nil

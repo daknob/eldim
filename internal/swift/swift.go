@@ -36,12 +36,12 @@ func (conf *BackendConfig) Validate() error {
 	if conf.Username == "" || conf.APIKey == "" ||
 		conf.AuthURL == "" || conf.Region == "" ||
 		conf.Container == "" {
-		return fmt.Errorf("All fields are required for OpenStack Swift backends to work")
+		return fmt.Errorf("all fields are required for OpenStack Swift backends to work")
 	}
 
 	/* Ensure expire seconds is not negative */
 	if conf.ExpireSeconds < 0 {
-		return fmt.Errorf("Expiry Seconds cannot be a negative number")
+		return fmt.Errorf("expiry Seconds cannot be a negative number")
 	}
 
 	/* Attempt to connect to OpenStack Swift Backend */
@@ -49,7 +49,7 @@ func (conf *BackendConfig) Validate() error {
 
 	err := client.Connect(context.Background())
 	if err != nil {
-		return fmt.Errorf("Failed to authenticate to Backend: %v", err)
+		return fmt.Errorf("failed to authenticate to Backend: %v", err)
 	}
 
 	/* Check if container (bucket) exists */
@@ -131,7 +131,7 @@ func (c *Client) BucketExists(ctx context.Context, name string) (bool, error) {
 		return false, nil
 	}
 	if err != nil {
-		return false, fmt.Errorf("Failed to check if bucket exists: %v", err)
+		return false, fmt.Errorf("failed to check if bucket exists: %v", err)
 	}
 
 	return true, nil
@@ -147,7 +147,7 @@ func (c *Client) ObjectExists(ctx context.Context, name string) (bool, error) {
 		return false, nil
 	}
 	if err != nil {
-		return false, fmt.Errorf("Failed to check if object exists: %v", err)
+		return false, fmt.Errorf("failed to check if object exists: %v", err)
 	}
 
 	return true, nil
@@ -185,7 +185,7 @@ func (c *Client) UploadFile(ctx context.Context, name string, file io.Reader, fi
 			"X-Delete-After": fmt.Sprintf("%d", c.Config.ExpireSeconds),
 		})
 	if err != nil {
-		return fmt.Errorf("Failed to upload file: %v", err)
+		return fmt.Errorf("failed to upload file: %v", err)
 	}
 
 	return nil
