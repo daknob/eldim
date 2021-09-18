@@ -109,3 +109,10 @@ s3backends:
     bucketname: "eldim-in-amazon"
     accesskey: "AccessKey"
     secretkey: "SecretKey"
+  -
+    name: "Backblaze B2 Example"
+    endpoint: "s3.eu-central-003.backblazeb2.com"
+    region: "eu-central-003"
+    bucketname: "b2-bucket-name"
+    accesskey: "AppKey-keyID"
+    secretkey: "AppKey-applicationKey"
