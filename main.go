@@ -45,43 +45,43 @@ func main() {
 	}
 
 	/* Startup logs */
-	logrus.Printf("Starting eldim...")
-	logrus.Printf("Log in JSON: %v", *logFormat)
-	logrus.Printf("Configuration File: %s", *configPath)
+	logrus.Printf("starting eldim...")
+	logrus.Printf("log in JSON: %v", *logFormat)
+	logrus.Printf("configuration file: %s", *configPath)
 
 	/* Parse the configuration file */
-	logrus.Printf("Parsing the configuration file...")
+	logrus.Printf("parsing the configuration file...")
 
 	/* Open the configuration file, and read contents to RAM */
 	confb, err := ioutil.ReadFile(*configPath)
 	if err != nil {
-		logrus.Fatalf("Could not open configuration file: %v", err)
+		logrus.Fatalf("could not open configuration file: %v", err)
 	}
 
 	/* Attempt to parse it for YAML */
 	err = yaml.Unmarshal(confb, &conf)
 	if err != nil {
-		logrus.Fatalf("Could not parse the YAML configuration file: %v", err)
+		logrus.Fatalf("could not parse the YAML configuration file: %v", err)
 	}
 
-	logrus.Printf("Configuration file loaded.")
+	logrus.Printf("configuration file loaded.")
 
 	/* Validate configuration by appropriate function call */
-	logrus.Printf("Validating parameters...")
+	logrus.Printf("validating parameters...")
 	err = conf.Validate()
 	if err != nil {
-		logrus.Fatalf("Invalid configuration: %v", err)
+		logrus.Fatalf("invalid configuration: %v", err)
 	}
-	logrus.Printf("Configuration file validated.")
+	logrus.Printf("configuration file validated.")
 
 	/* Load client file */
 	clib, err := ioutil.ReadFile(conf.ClientFile)
 	if err != nil {
-		logrus.Fatalf("Could not open clients file: %v", err)
+		logrus.Fatalf("could not open clients file: %v", err)
 	}
 	err = yaml.Unmarshal(clib, &clients)
 	if err != nil {
-		logrus.Fatalf("Could not parse clients YML file: %v", err)
+		logrus.Fatalf("could not parse clients YML file: %v", err)
 	}
 
 	/* Register Prometheus Metrics */
@@ -91,7 +91,7 @@ func main() {
 	updateConfMetrics()
 
 	/* Various web server configurations */
-	logrus.Printf("Configuring the HTTP Server...")
+	logrus.Printf("configuring the HTTP Server...")
 
 	/* Create an HTTP Router */
 	router := httprouter.New()
@@ -137,14 +137,14 @@ func main() {
 	logrus.Printf("HTTP Server Configured.")
 
 	/* Start serving TLS */
-	logrus.Printf("Serving on :%d ...", conf.ListenPort)
+	logrus.Printf("serving on :%d ...", conf.ListenPort)
 
 	err = server.ListenAndServeTLS(
 		conf.TLSChainPath,
 		conf.TLSKeyPath,
 	)
 	if err != nil {
-		logrus.Fatalf("Failed to start HTTP Server: %v", err)
+		logrus.Fatalf("failed to start HTTP Server: %v", err)
 	}
 
 	/* Exit */

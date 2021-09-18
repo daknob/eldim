@@ -18,7 +18,7 @@ an error is returned.
 func getIPName(ip string) (string, error) {
 	naddr := net.ParseIP(ip)
 	if naddr == nil {
-		return "", fmt.Errorf("Invalid IP Address Given: %s", ip)
+		return "", fmt.Errorf("invalid IP Address given: %s", ip)
 	}
 
 	for _, c := range clients {
@@ -39,7 +39,7 @@ found, an error is returned.
 func getPassName(password string) (string, error) {
 
 	if password == "" {
-		return "", fmt.Errorf("Password was empty. Did not match")
+		return "", fmt.Errorf("password was empty. did not match")
 	}
 
 	for _, c := range clients {
@@ -48,7 +48,7 @@ func getPassName(password string) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("Password did not match client database")
+	return "", fmt.Errorf("password did not match client database")
 }
 
 /*

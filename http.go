@@ -63,7 +63,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	/* Get IP Address of Request */
 	ipAddr, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil {
-		logrus.Errorf("%s: Failed to parse Remote IP of request: %v", rid, err)
+		logrus.Errorf("%s: failed to parse Remote IP of request: %v", rid, err)
 	}
 
 	/* Check if the Password supplied is allowed and matches a host */
@@ -76,7 +76,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 			This means we need to do an IP-based check, and try and see
 			if this IP Address is allowed as a client.
 		*/
-		logrus.Printf("%s: Client at %s did not supply a known password. Checking by IP", rid, ipAddr)
+		logrus.Printf("%s: client at %s did not supply a known password. Checking by IP", rid, ipAddr)
 
 		hostname, err = getIPName(ipAddr)
 		if err != nil {
@@ -95,17 +95,17 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	}
 
 	/* Authentication has happened successfully */
-	logrus.Printf("%s: Detected Hostname: %s", rid, hostname)
+	logrus.Printf("%s: detected Hostname: %s", rid, hostname)
 	promHostAuths.With(p.Labels{"hostname": hostname}).Inc()
 
 	/* Begin file processing */
-	logrus.Printf("%s: Parsing upload from %s [%s]", rid, hostname, ipAddr)
+	logrus.Printf("%s: parsing upload from %s [%s]", rid, hostname, ipAddr)
 	err = r.ParseMultipartForm(conf.MaxUploadRAM * 1024 * 1024)
 	if err != nil {
 		if err == io.EOF {
-			logrus.Errorf("%s: Upload cancelled", rid)
+			logrus.Errorf("%s: upload cancelled", rid)
 		} else {
-			logrus.Errorf("%s: Unable to parse multipart form: %v", rid, err)
+			logrus.Errorf("%s: unable to parse multipart form: %v", rid, err)
 		}
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
@@ -115,11 +115,11 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		return
 	}
 	defer r.MultipartForm.RemoveAll()
-	logrus.Printf("%s: Done parsing upload", rid)
+	logrus.Printf("%s: done parsing upload", rid)
 
 	/* Check if a file name has been provided */
 	if r.PostFormValue("filename") == "" {
-		logrus.Errorf("%s: Did not provide a file name to save the file as", rid)
+		logrus.Errorf("%s: did not provide a file name to save the file as", rid)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "File name not supplied")
@@ -129,14 +129,14 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	}
 
 	/* Connect to all Backends */
-	logrus.Printf("%s: Connecting to Backends...", rid)
+	logrus.Printf("%s: connecting to Backends...", rid)
 	var backends []backend.Client
 	for _, be := range conf.Clients() {
-		logrus.Printf("%s: Connecting to '%s'", rid, be.Name())
+		logrus.Printf("%s: connecting to '%s'", rid, be.Name())
 
 		err := be.Connect(r.Context())
 		if err != nil {
-			logrus.Errorf("%s: Unable to connect to %s Backend '%s': %v", rid, be.BackendName(), be.Name(), err)
+			logrus.Errorf("%s: unable to connect to %s Backend '%s': %v", rid, be.BackendName(), be.Name(), err)
 			promFileUpErrors.With(p.Labels{
 				"error": fmt.Sprintf(
 					"%s-Backend-Connection-Error",
@@ -145,12 +145,12 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 			}).Inc()
 			continue
 		}
-		logrus.Printf("%s: Successfully connected to %s Backend: %s", rid, be.BackendName(), be.Name())
+		logrus.Printf("%s: successfully connected to %s Backend: %s", rid, be.BackendName(), be.Name())
 		backends = append(backends, be)
 	}
 
 	if len(backends) == 0 {
-		logrus.Errorf("%s: No Backends available to handle requests", rid)
+		logrus.Errorf("%s: no Backends available to handle requests", rid)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "An error occured while processing the uploaded file")
@@ -158,14 +158,14 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		promFileUpErrors.With(p.Labels{"error": "No-Backends-Available"}).Inc()
 		return
 	}
-	logrus.Printf("%s: Connection successful. %d Backends live.", rid, len(backends))
+	logrus.Printf("%s: connection successful. %d Backends live.", rid, len(backends))
 
 	/* Check if file exists in all available containers */
-	logrus.Printf("%s: Checking if file exists already in any Backend...", rid)
+	logrus.Printf("%s: checking if file exists already in any Backend...", rid)
 	for _, be := range backends {
 		exists, err := be.ObjectExists(r.Context(), fmt.Sprintf("%s/%s", hostname, r.PostFormValue("filename")))
 		if err != nil {
-			logrus.Errorf("%s: Failed to check if object exists for backend %s: %v", rid, be.Name(), err)
+			logrus.Errorf("%s: failed to check if object exists for backend %s: %v", rid, be.Name(), err)
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Header().Set("Content-Type", "text/plain")
 			fmt.Fprintf(w, "An error occured while processing the uploaded file")
@@ -174,7 +174,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 			return
 		}
 		if exists {
-			logrus.Errorf("%s: File '%s' already exists", rid, r.PostFormValue("filename"))
+			logrus.Errorf("%s: file '%s' already exists", rid, r.PostFormValue("filename"))
 			w.WriteHeader(http.StatusBadRequest)
 			w.Header().Set("Content-Type", "text/plain")
 			fmt.Fprintf(w, "File already exists.")
@@ -183,12 +183,12 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 			return
 		}
 	}
-	logrus.Printf("%s: File does not exist in any Backend.", rid)
+	logrus.Printf("%s: file does not exist in any Backend.", rid)
 
 	/* Process uploaded file */
 	file, _, err := r.FormFile("file")
 	if err != nil {
-		logrus.Errorf("%s: Uploaded File Error: %v", rid, err)
+		logrus.Errorf("%s: uploaded File Error: %v", rid, err)
 		w.WriteHeader(http.StatusBadRequest)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Did not supply a valid file.")
@@ -206,7 +206,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	 */
 	uploadSize, err := file.Seek(0, os.SEEK_END)
 	if err != nil {
-		logrus.Fatalf("Failed to get file size: %v", err)
+		logrus.Fatalf("failed to get file size: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "An error occurred while processing the uploaded file.")
@@ -217,7 +217,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 
 	_, err = file.Seek(0, os.SEEK_SET)
 	if err != nil {
-		logrus.Fatalf("Failed to get file size: %v", err)
+		logrus.Fatalf("failed to get file size: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "An error occurred while processing the uploaded file.")
@@ -226,16 +226,16 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		return
 	}
 
-	logrus.Printf("%s: File uploaded. Size: %d bytes.", rid, uploadSize)
+	logrus.Printf("%s: file uploaded. Size: %d bytes.", rid, uploadSize)
 	promBytesUploadedSuc.Add(float64(uploadSize))
-	logrus.Printf("%s: Encrypting file...", rid)
+	logrus.Printf("%s: encrypting file...", rid)
 
 	/* Load all Recipients from configuration */
 	var rcpt []age.Recipient
 	for _, r := range conf.Encryption.AgeID {
 		ar, err := age.ParseX25519Recipient(r)
 		if err != nil {
-			logrus.Errorf("%s: Failed to parse age ID Recipient: %v", rid, err)
+			logrus.Errorf("%s: failed to parse age ID Recipient: %v", rid, err)
 			continue
 		}
 		rcpt = append(rcpt, age.Recipient(ar))
@@ -243,14 +243,14 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	for _, r := range conf.Encryption.AgeSSH {
 		ar, err := agessh.ParseRecipient(r)
 		if err != nil {
-			logrus.Errorf("%s: Failed to parse age SSH Recipient: %v", rid, err)
+			logrus.Errorf("%s: failed to parse age SSH Recipient: %v", rid, err)
 			continue
 		}
 		rcpt = append(rcpt, age.Recipient(ar))
 	}
 
 	if len(rcpt) == 0 {
-		logrus.Errorf("%s: No recipients could be parsed from the configuration file", rid)
+		logrus.Errorf("%s: no recipients could be parsed from the configuration file", rid)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Failed to encrypt file.")
@@ -264,7 +264,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 
 	ew, err := age.Encrypt(encBuff, rcpt...)
 	if err != nil {
-		logrus.Errorf("%s: Failed to initialize encryption: %v", rid, err)
+		logrus.Errorf("%s: failed to initialize encryption: %v", rid, err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Failed to encrypt file.")
@@ -276,7 +276,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	/* Encrypt file */
 	wb, err := io.Copy(ew, file)
 	if err != nil || wb != uploadSize {
-		logrus.Errorf("%s: Encryption failed, expected %d bytes ciphertext, got %d: %v", rid, uploadSize, wb, err)
+		logrus.Errorf("%s: encryption failed, expected %d bytes ciphertext, got %d: %v", rid, uploadSize, wb, err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Failed to encrypt file.")
@@ -286,7 +286,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	}
 
 	if ew.Close() != nil {
-		logrus.Errorf("%s: Encryption failed: %v", rid, err)
+		logrus.Errorf("%s: encryption failed: %v", rid, err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Failed to encrypt file.")
@@ -297,8 +297,8 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 
 	encrSize := int64(encBuff.Len())
 
-	logrus.Printf("%s: Encryption completed", rid)
-	logrus.Printf("%s: Uploading encrypted file to all Backends...", rid)
+	logrus.Printf("%s: encryption completed", rid)
+	logrus.Printf("%s: uploading encrypted file to all Backends...", rid)
 
 	/* All files are <hostname>/<desired_name> */
 	uploadFileName := fmt.Sprintf("%s/%s", hostname, r.PostFormValue("filename"))
@@ -307,11 +307,11 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 
 	/* For every backend */
 	for _, be := range backends {
-		logrus.Printf("%s: Uploading %s to %s", rid, uploadFileName, be.Name())
+		logrus.Printf("%s: uploading %s to %s", rid, uploadFileName, be.Name())
 
 		err := be.UploadFile(context.Background(), uploadFileName, bytes.NewReader(encBuff.Bytes()), encrSize)
 		if err != nil {
-			logrus.Errorf("%s: Failed to upload %s to %s: %v", rid, uploadFileName, be.Name(), err)
+			logrus.Errorf("%s: failed to upload %s to %s: %v", rid, uploadFileName, be.Name(), err)
 			promFileUpErrors.With(p.Labels{
 				"error": fmt.Sprintf(
 					"%s-Upload-Failed", strings.ReplaceAll(be.BackendName(), " ", "-"),
@@ -333,7 +333,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 
 	/* Check if at least one file was uploaded */
 	if uploads == 0 {
-		logrus.Errorf("%s: Did not manage to upload to any Backends!", rid)
+		logrus.Errorf("%s: did not manage to upload to any Backends!", rid)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "Failed to store file.")
@@ -343,7 +343,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	}
 
 	/* All good, finally it's over */
-	logrus.Printf("%s: Uploaded encrypted file to %d Backends", rid, uploads)
+	logrus.Printf("%s: uploaded encrypted file to %d Backends", rid, uploads)
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "text/plain")
 	fmt.Fprintf(w, "Ok")
