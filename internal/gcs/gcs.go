@@ -169,7 +169,7 @@ Backend, with a name of name.
 func (c *Client) UploadFile(ctx context.Context, name string, file io.Reader, filesize int64) error {
 
 	w := c.Conn.Bucket(c.Bucket()).Object(name).NewWriter(ctx)
-	w.ObjectAttrs.ContentType = "application/octet-stream"
+	w.ObjectAttrs.ContentType = "application/vnd.age"
 	wb, err := io.Copy(w, file)
 	if err != nil || wb != filesize {
 		return fmt.Errorf("failed to write to object (expected: %d B, written: %d B): %v", filesize, wb, err)

@@ -181,7 +181,7 @@ S3 Backend, with a name of name.
 func (c *Client) UploadFile(ctx context.Context, name string, file io.Reader, filesize int64) error {
 
 	uinfo, err := c.Conn.PutObject(ctx, c.Config.Bucket, name, file, filesize, minio.PutObjectOptions{
-		ContentType:    "application/octet-stream",
+		ContentType:    "application/vnd.age",
 		SendContentMd5: c.Config.SendMD5,
 	})
 	if err != nil {

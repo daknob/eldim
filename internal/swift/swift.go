@@ -181,7 +181,7 @@ a name of name.
 func (c *Client) UploadFile(ctx context.Context, name string, file io.Reader, filesize int64) error {
 
 	_, err := c.Conn.ObjectPut(c.Bucket(), name, file, false, "",
-		"application/octet-stream", map[string]string{
+		"application/vnd.age", map[string]string{
 			"X-Delete-After": fmt.Sprintf("%d", c.Config.ExpireSeconds),
 		})
 	if err != nil {
