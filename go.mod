@@ -7,7 +7,6 @@ require (
 	cloud.google.com/go/storage v1.12.0
 	filippo.io/age v1.0.0-beta5
 	github.com/daknob/hlog v0.1.0
-	github.com/go-ini/ini v1.63.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/julienschmidt/httprouter v1.3.0
@@ -15,12 +14,10 @@ require (
 	github.com/keybase/go-triplesec v0.0.0-20200218020411-6687d79e9f55
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
-	github.com/minio/minio-go v6.0.14+incompatible
-	github.com/minio/minio-go/v7 v7.0.14 // indirect
+	github.com/minio/minio-go/v7 v7.0.14
 	github.com/minio/sha256-simd v1.0.0 // indirect
-	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/ncw/swift v1.0.52
-	github.com/prometheus/client_golang v1.9.0
+	github.com/prometheus/client_golang v1.11.1
 	github.com/rs/xid v1.3.0 // indirect
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/crypto v0.0.0-20210915214749-c084706c2272 // indirect
