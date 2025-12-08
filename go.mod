@@ -7,7 +7,7 @@ require (
 	filippo.io/age v1.2.1
 	github.com/daknob/hlog v0.1.0
 	github.com/julienschmidt/httprouter v1.3.0
-	github.com/keybase/go-triplesec v0.0.0-20200218020411-6687d79e9f55
+	github.com/keybase/go-triplesec v0.0.0-20250106205321-7dc0668e81f5
 	github.com/minio/minio-go/v7 v7.0.97
 	github.com/ncw/swift v1.0.53
 	github.com/prometheus/client_golang v1.23.2

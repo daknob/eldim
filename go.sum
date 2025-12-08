@@ -88,6 +88,8 @@ github.com/keybase/go-crypto v0.0.0-20200123153347-de78d2cb44f4 h1:cTxwSmnaqLoo+
 github.com/keybase/go-crypto v0.0.0-20200123153347-de78d2cb44f4/go.mod h1:ghbZscTyKdM07+Fw3KSi0hcJm+AlEUWj8QLlPtijN/M=
 github.com/keybase/go-triplesec v0.0.0-20200218020411-6687d79e9f55 h1:ewbNhdZG9ArmoghWTR2sXAdfco7V3k8UsSouD/2MDd8=
 github.com/keybase/go-triplesec v0.0.0-20200218020411-6687d79e9f55/go.mod h1:1WQnhBLZ02sqe0+76mbah88MjF3CrTs0bStu9GLv57E=
+github.com/keybase/go-triplesec v0.0.0-20250106205321-7dc0668e81f5 h1:RsaJ+/yhiLBkTSyYg3grxiUDVDTeqi/iW4b0H4lHPNk=
+github.com/keybase/go-triplesec v0.0.0-20250106205321-7dc0668e81f5/go.mod h1:k0wmD8TgBrtAxbpHnVbwtvQIxAAv7AMNT2BM/FCHw5g=
 github.com/klauspost/compress v1.18.2 h1:iiPHWW0YrcFgpBYhsA6D1+fqHssJscY/Tm/y2Uqnapk=
 github.com/klauspost/compress v1.18.2/go.mod h1:R0h/fSBs8DE4ENlcrlib3PsXS61voFxhIs2DeRhCvJ4=
 github.com/klauspost/cpuid/v2 v2.0.1/go.mod h1:FInQzS24/EEf25PyTYn52gqo7WaD8xa0213Md/qVLRg=
