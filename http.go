@@ -66,6 +66,25 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		logrus.Errorf("%s: failed to parse Remote IP of request: %v", rid, err)
 	}
 
+	/* Begin file processing */
+	logrus.Printf("%s: parsing upload from %s", rid, ipAddr)
+	err = r.ParseMultipartForm(conf.MaxUploadRAM * 1024 * 1024)
+	if err != nil {
+		if err == io.EOF {
+			logrus.Errorf("%s: upload cancelled", rid)
+		} else {
+			logrus.Errorf("%s: unable to parse multipart form: %v", rid, err)
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Header().Set("Content-Type", "text/plain")
+		fmt.Fprintf(w, "Error while processing upload request")
+		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "Multipart-Form-Parse-Error"}).Inc()
+		return
+	}
+	defer r.MultipartForm.RemoveAll()
+	logrus.Printf("%s: done parsing upload", rid)
+
 	/* Check if the Password supplied is allowed and matches a host */
 	hostname, err := getPassName(r.PostFormValue("password"))
 	if err != nil {
@@ -97,25 +116,6 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	/* Authentication has happened successfully */
 	logrus.Printf("%s: detected Hostname: %s", rid, hostname)
 	promHostAuths.With(p.Labels{"hostname": hostname}).Inc()
-
-	/* Begin file processing */
-	logrus.Printf("%s: parsing upload from %s [%s]", rid, hostname, ipAddr)
-	err = r.ParseMultipartForm(conf.MaxUploadRAM * 1024 * 1024)
-	if err != nil {
-		if err == io.EOF {
-			logrus.Errorf("%s: upload cancelled", rid)
-		} else {
-			logrus.Errorf("%s: unable to parse multipart form: %v", rid, err)
-		}
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Header().Set("Content-Type", "text/plain")
-		fmt.Fprintf(w, "Error while processing upload request")
-		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "500"}).Inc()
-		promFileUpErrors.With(p.Labels{"error": "Multipart-Form-Parse-Error"}).Inc()
-		return
-	}
-	defer r.MultipartForm.RemoveAll()
-	logrus.Printf("%s: done parsing upload", rid)
 
 	/* Check if a file name has been provided */
 	if r.PostFormValue("filename") == "" {
