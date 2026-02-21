@@ -23,7 +23,7 @@ var (
 )
 
 const (
-	version = "v0.6.1"
+	version = "v0.6.2"
 )
 
 func main() {
@@ -126,6 +126,7 @@ func main() {
 
 	/* Configure HTTP */
 	server := http.Server{
+		ReadTimeout:       time.Duration(conf.ReadTimeout) * time.Second,
 		ReadHeaderTimeout: 5 * time.Second,
 		WriteTimeout:      120 * time.Second,
 		IdleTimeout:       180 * time.Second,

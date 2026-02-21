@@ -25,9 +25,11 @@ Config is the data structure outlying the configuration file of eldim
 */
 type Config struct {
 	/* Web Server Settings */
-	ListenPort   int   `yaml:"listenport"`
-	ServerTokens bool  `yaml:"servertokens"`
-	MaxUploadRAM int64 `yaml:"maxuploadram"`
+	ListenPort    int   `yaml:"listenport"`
+	ServerTokens  bool  `yaml:"servertokens"`
+	MaxUploadRAM  int64 `yaml:"maxuploadram"`
+	MaxUploadSize int64 `yaml:"maxuploadsize"`
+	ReadTimeout   int   `yaml:"readtimeout"`
 
 	/* TLS Settings */
 	TLSChainPath string `yaml:"tlschain"`
@@ -121,6 +123,16 @@ func (conf *Config) Validate() error {
 	/* Validate Max Upload RAM (in MB) */
 	if conf.MaxUploadRAM <= 0 {
 		return fmt.Errorf("Maximum Upload RAM must be a positive number")
+	}
+
+	/* Validate Max Upload Size (in MB) */
+	if conf.MaxUploadSize <= 0 {
+		return fmt.Errorf("Maximum Upload Size must be a positive number")
+	}
+
+	/* Validate Read Timeout (in seconds) */
+	if conf.ReadTimeout <= 0 {
+		return fmt.Errorf("Read Timeout must be a positive number")
 	}
 
 	/* Validate Encryption Key */

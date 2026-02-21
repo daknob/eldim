@@ -11,6 +11,12 @@ servertokens: true
 # Maximum uploaded file size to keep in RAM before using disk
 maxuploadram: 100
 
+# Maximum upload file size in MB (hard limit)
+maxuploadsize: 40960
+
+# Read timeout for incoming requests in seconds
+readtimeout: 300
+
 #####
 # TLS Configuration
 #####

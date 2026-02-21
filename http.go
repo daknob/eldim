@@ -66,10 +66,22 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		logrus.Errorf("%s: failed to parse Remote IP of request: %v", rid, err)
 	}
 
+	/* Limit request body size */
+	r.Body = http.MaxBytesReader(w, r.Body, conf.MaxUploadSize*1024*1024)
+
 	/* Begin file processing */
 	logrus.Printf("%s: parsing upload from %s", rid, ipAddr)
 	err = r.ParseMultipartForm(conf.MaxUploadRAM * 1024 * 1024)
 	if err != nil {
+		if err.Error() == "http: request body too large" {
+			logrus.Errorf("%s: upload exceeds maximum size of %d MB", rid, conf.MaxUploadSize)
+			w.WriteHeader(http.StatusRequestEntityTooLarge)
+			w.Header().Set("Content-Type", "text/plain")
+			fmt.Fprintf(w, "Upload exceeds maximum allowed size")
+			promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "413"}).Inc()
+			promFileUpErrors.With(p.Labels{"error": "Upload-Too-Large"}).Inc()
+			return
+		}
 		if err == io.EOF {
 			logrus.Errorf("%s: upload cancelled", rid)
 		} else {

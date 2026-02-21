@@ -33,6 +33,22 @@ be slower. It is recommended to set this to about the largest file you can
 expect, plus some more, but not to something over 10% of the total server
 RAM.
 
+### maxuploadsize
+The `maxuploadsize` parameter controls the maximum total size of an upload
+request in MBs. This is a hard limit enforced on the request body, and any
+request exceeding this size will be rejected with an HTTP 413 error. This
+prevents unauthenticated clients from exhausting server disk space or
+bandwidth by sending arbitrarily large uploads. It is recommended to set this
+to a value slightly above the largest file you expect to receive.
+
+### readtimeout
+The `readtimeout` parameter controls the maximum time in seconds that the
+server will wait for an entire request (headers and body) to be received.
+This protects against slow-upload attacks where a client sends data very
+slowly to tie up server connections. It should be set high enough to allow
+legitimate large file uploads over slow connections, but low enough to
+prevent abuse. A value of 300 (5 minutes) is a reasonable starting point.
+
 ### tlschain
 The `tlschain` parameter is the path to the TLS certificate chain file. If
 you are using Let's Encrypt, this is the `fullchain.pem` file. Make sure
