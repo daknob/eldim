@@ -1,11 +1,28 @@
 name: Build Release
 
-on: create
+on:
+  push:
+    tags:
+      - 'v*'
 
 jobs:
   release:
     name: Build Release
     runs-on: ubuntu-latest
     steps:
-      - name: Go Release Binary
-        uses: ngs/go-release.action@v1.0.2
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+      - name: Build binaries
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o eldim-${{ steps.version.outputs.VERSION }}-linux-amd64 .
+          GOOS=linux GOARCH=arm64 go build -o eldim-${{ steps.version.outputs.VERSION }}-linux-arm64 .
+          GOOS=darwin GOARCH=arm64 go build -o eldim-${{ steps.version.outputs.VERSION }}-darwin-arm64 .
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: eldim-*
