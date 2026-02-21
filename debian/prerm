@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    remove|upgrade)
+        systemctl stop eldim || true
+        ;;
+esac
+
+exit 0

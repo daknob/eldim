@@ -1,0 +1,11 @@
+Package: eldim
+Version: VERSION
+Architecture: ARCHITECTURE
+Maintainer: Antonis Chariton <daknob@daknob.net>
+Homepage: https://github.com/daknob/eldim
+Section: utils
+Priority: optional
+Description: A secure log and backup storage proxy
+ eldim is a web server that accepts file uploads from a particular set of
+ hosts, encrypts them, and stores them in an Object Storage backend such as
+ OpenStack Swift, Google Cloud Storage, or S3-compatible services.

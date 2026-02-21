@@ -1,0 +1,16 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        if ! id -u eldim >/dev/null 2>&1; then
+            useradd -s /usr/sbin/nologin -r -M eldim
+        fi
+        chown -R eldim:eldim /etc/eldim
+        chmod 700 /etc/eldim
+        chmod 400 /etc/eldim/*.yml
+        systemctl daemon-reload || true
+        ;;
+esac
+
+exit 0

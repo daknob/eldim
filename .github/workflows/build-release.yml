@@ -22,6 +22,59 @@ jobs:
           GOOS=linux GOARCH=amd64 go build -o eldim-${{ steps.version.outputs.VERSION }}-linux-amd64 .
           GOOS=linux GOARCH=arm64 go build -o eldim-${{ steps.version.outputs.VERSION }}-linux-arm64 .
           GOOS=darwin GOARCH=arm64 go build -o eldim-${{ steps.version.outputs.VERSION }}-darwin-arm64 .
+      - name: Build .deb packages
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          # Strip leading 'v' for the .deb version field
+          DEB_VERSION="${VERSION#v}"
+
+          for ARCH in amd64 arm64; do
+            PKG="eldim-${VERSION}-linux-${ARCH}-deb"
+
+            # Create directory structure
+            mkdir -p "${PKG}/DEBIAN"
+            mkdir -p "${PKG}/usr/bin"
+            mkdir -p "${PKG}/etc/eldim"
+            mkdir -p "${PKG}/lib/systemd/system"
+            mkdir -p "${PKG}/usr/share/doc/eldim"
+
+            # Install binary
+            cp "eldim-${VERSION}-linux-${ARCH}" "${PKG}/usr/bin/eldim"
+            chmod 755 "${PKG}/usr/bin/eldim"
+
+            # Install config files
+            cp eldim.yml "${PKG}/etc/eldim/eldim.yml"
+            cp clients.yml "${PKG}/etc/eldim/clients.yml"
+
+            # Install systemd service
+            cp eldim.service "${PKG}/lib/systemd/system/eldim.service"
+
+            # Install documentation
+            cp README.md "${PKG}/usr/share/doc/eldim/"
+            cp LICENSE "${PKG}/usr/share/doc/eldim/"
+            cp docs/api.md "${PKG}/usr/share/doc/eldim/"
+            cp docs/config.md "${PKG}/usr/share/doc/eldim/"
+            cp docs/metrics.md "${PKG}/usr/share/doc/eldim/"
+
+            # DEBIAN control file
+            sed -e "s/VERSION/${DEB_VERSION}/" -e "s/ARCHITECTURE/${ARCH}/" \
+              debian/control.template > "${PKG}/DEBIAN/control"
+
+            # DEBIAN conffiles
+            cp debian/conffiles "${PKG}/DEBIAN/conffiles"
+
+            # DEBIAN maintainer scripts
+            cp debian/postinst "${PKG}/DEBIAN/postinst"
+            cp debian/prerm "${PKG}/DEBIAN/prerm"
+            cp debian/postrm "${PKG}/DEBIAN/postrm"
+            chmod 755 "${PKG}/DEBIAN/postinst"
+            chmod 755 "${PKG}/DEBIAN/prerm"
+            chmod 755 "${PKG}/DEBIAN/postrm"
+
+            # Build the .deb and clean up the staging directory
+            dpkg-deb --build "${PKG}" "eldim-${VERSION}-linux-${ARCH}.deb"
+            rm -rf "${PKG}"
+          done
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:

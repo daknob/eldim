@@ -1,0 +1,12 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    purge)
+        rm -rf /etc/eldim
+        userdel eldim 2>/dev/null || true
+        systemctl daemon-reload || true
+        ;;
+esac
+
+exit 0
