@@ -16,7 +16,7 @@ import (
 	"github.com/daknob/eldim/internal/backend"
 
 	"github.com/daknob/eldim/internal/swift"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 /*
