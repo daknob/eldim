@@ -218,7 +218,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	 */
 	uploadSize, err := file.Seek(0, os.SEEK_END)
 	if err != nil {
-		logrus.Fatalf("failed to get file size: %v", err)
+		logrus.Errorf("failed to get file size: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "An error occurred while processing the uploaded file.")
@@ -229,7 +229,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 
 	_, err = file.Seek(0, os.SEEK_SET)
 	if err != nil {
-		logrus.Fatalf("failed to get file size: %v", err)
+		logrus.Errorf("failed to get file size: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Set("Content-Type", "text/plain")
 		fmt.Fprintf(w, "An error occurred while processing the uploaded file.")
