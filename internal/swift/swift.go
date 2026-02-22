@@ -176,13 +176,15 @@ func (c *Client) BackendName() string {
 
 /*
 UploadFile uploads a file to the OpenStack Swift Backend, with
-a name of name.
+a name of name. It fails if the file already exists and does not
+overwrite it.
 */
 func (c *Client) UploadFile(ctx context.Context, name string, file io.Reader, filesize int64) error {
 
 	_, err := c.Conn.ObjectPut(c.Bucket(), name, file, false, "",
 		"application/vnd.age", map[string]string{
 			"X-Delete-After": fmt.Sprintf("%d", c.Config.ExpireSeconds),
+			"If-None-Match":  "*",
 		})
 	if err != nil {
 		return fmt.Errorf("failed to upload file: %v", err)
