@@ -307,7 +307,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		return
 	}
 
-	if ew.Close() != nil {
+	if err := ew.Close(); err != nil {
 		logrus.Errorf("%s: encryption failed: %v", rid, err)
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusInternalServerError)
