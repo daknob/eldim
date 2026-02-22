@@ -4,10 +4,20 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net/http"
+	"sync"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/sirupsen/logrus"
 )
+
+/*
+conditionalWriteSupport tracks S3 endpoints that support the
+If-None-Match header. Endpoints are assumed to support it until
+a 501 response proves otherwise (e.g. Backblaze B2).
+*/
+var conditionalWriteSupport sync.Map
 
 /*
 BackendConfig is the data structure containing all information
@@ -115,6 +125,10 @@ func (c *Client) Connect(ctx context.Context) error {
 	mc.SetAppInfo("eldim", "")
 
 	c.Conn = mc
+
+	/* Assume the endpoint supports conditional writes until proven otherwise */
+	conditionalWriteSupport.LoadOrStore(c.Config.Endpoint, true)
+
 	return nil
 }
 
@@ -175,16 +189,51 @@ func (c *Client) BackendName() string {
 }
 
 /*
-UploadFile uploads a file to the
-S3 Backend, with a name of name.
+UploadFile uploads a file to the S3 Backend, with a name of name.
+It uses If-None-Match to prevent overwriting existing files when the
+endpoint supports it. Endpoints that return 501 (e.g. Backblaze B2)
+are remembered and subsequent uploads skip the header.
 */
 func (c *Client) UploadFile(ctx context.Context, name string, file io.Reader, filesize int64) error {
 
-	uinfo, err := c.Conn.PutObject(ctx, c.Config.Bucket, name, file, filesize, minio.PutObjectOptions{
+	opts := minio.PutObjectOptions{
 		ContentType:    "application/vnd.age",
 		SendContentMd5: c.Config.SendMD5,
-	})
+	}
+
+	/* Use If-None-Match unless the endpoint is known to not support it */
+	val, _ := conditionalWriteSupport.Load(c.Config.Endpoint)
+	supported, _ := val.(bool)
+	if supported {
+		opts.SetMatchETagExcept("*")
+	}
+
+	uinfo, err := c.Conn.PutObject(ctx, c.Config.Bucket, name, file, filesize, opts)
 	if err != nil {
+		/* If the endpoint does not support If-None-Match, remember and retry */
+		if supported && minio.ToErrorResponse(err).StatusCode == http.StatusNotImplemented {
+			conditionalWriteSupport.Store(c.Config.Endpoint, false)
+			logrus.Warnf("S3 endpoint '%s' does not support If-None-Match, retrying without it", c.Config.Endpoint)
+
+			if seeker, ok := file.(io.Seeker); ok {
+				if _, seekErr := seeker.Seek(0, io.SeekStart); seekErr == nil {
+					retryOpts := minio.PutObjectOptions{
+						ContentType:    "application/vnd.age",
+						SendContentMd5: c.Config.SendMD5,
+					}
+					uinfo, err = c.Conn.PutObject(ctx, c.Config.Bucket, name, file, filesize, retryOpts)
+					if err != nil {
+						return fmt.Errorf("failed to upload file on retry: %v", err)
+					}
+					if filesize != uinfo.Size {
+						return fmt.Errorf("bytes uploaded is not the same as file size: %d vs %d", uinfo.Size, filesize)
+					}
+					return nil
+				}
+			}
+			return fmt.Errorf("failed to upload file (endpoint does not support If-None-Match and retry not possible): %v", err)
+		}
+
 		return fmt.Errorf("failed to upload file: %v", err)
 	}
 	if filesize != uinfo.Size {
