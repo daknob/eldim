@@ -42,8 +42,11 @@ func getPassName(password string) (string, error) {
 		return "", fmt.Errorf("password was empty. did not match")
 	}
 
+	passHash := sha256.Sum256([]byte(password))
+
 	for _, c := range clients {
-		if c.Password == password {
+		clientHash := sha256.Sum256([]byte(c.Password))
+		if subtle.ConstantTimeCompare(passHash[:], clientHash[:]) == 1 {
 			return c.Name(), nil
 		}
 	}
