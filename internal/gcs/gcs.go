@@ -164,11 +164,12 @@ func (c *Client) BackendName() string {
 
 /*
 UploadFile uploads a file to the Google Cloud Storage
-Backend, with a name of name.
+Backend, with a name of name. It fails if the file
+already exists and does not overwrite it.
 */
 func (c *Client) UploadFile(ctx context.Context, name string, file io.Reader, filesize int64) error {
 
-	w := c.Conn.Bucket(c.Bucket()).Object(name).NewWriter(ctx)
+	w := c.Conn.Bucket(c.Bucket()).Object(name).If(storage.Conditions{DoesNotExist: true}).NewWriter(ctx)
 	w.ObjectAttrs.ContentType = "application/vnd.age"
 	wb, err := io.Copy(w, file)
 	if err != nil || wb != filesize {
