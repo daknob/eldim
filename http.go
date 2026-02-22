@@ -168,6 +168,10 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 			continue
 		}
 		logrus.Printf("%s: successfully connected to %s Backend: %s", rid, be.BackendName(), be.Name())
+
+		/* Disconnect from the backend regardless of request status */
+		defer be.Disconnect(context.Background())
+
 		backends = append(backends, be)
 	}
 
@@ -345,9 +349,6 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 				p.Labels{"backendtype": strings.ReplaceAll(be.BackendName(), " ", "-")},
 			).Add(float64(encrSize))
 		}
-
-		/* Disconnect from Backend */
-		be.Disconnect(r.Context())
 	}
 
 	/* Reset the file buffer */
