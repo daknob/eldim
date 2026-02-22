@@ -1,7 +1,9 @@
 # eldim
+
 A Secure File Upload Proxy
 
 ## Description
+
 eldim is a web server that accepts file uploads from a particular set of
 hosts, and its job is to encrypt them, and then store them in an Object
 Storage backend system.
@@ -16,10 +18,12 @@ It has been designed to work as a standalone application, which means it must
 not sit behind a proxy, but instead be exposed directly to the Internet.
 
 ## Groups & Mailing Lists
+
 Currently the project has two mailing lists, in Google Groups, that are used
 for communication:
 
 ### eldim-announce
+
 The [eldim-announce](https://groups.google.com/forum/#!forum/eldim-announce)
 group is **recommended** for all users of eldim. It includes announcements
 for new versions, a changelog, as well as breaking changes that may occur
@@ -30,6 +34,7 @@ This is a very low volume list, and it is read-only. That is, only eldim
 updates are posted there, and you cannot send e-mails to other members.
 
 ### eldim-dev
+
 The [eldim-dev](https://groups.google.com/forum/#!forum/eldim-dev) group
 tries to address that final point above, and it is the techincal mailing
 list of the eldim project.
@@ -39,6 +44,7 @@ Basically it exists for communication about technical matters related to
 eldim, between the users, the contributors, or the developers.
 
 ## Design Decisions
+
 The design of eldim is data agnostic, and tries to push the relevant logic
 of all operations to the proper server. For example, the service itself does
 not care what types of files are uploaded, or when they're uploaded, or what
@@ -56,6 +62,7 @@ them who decide what to send, when to send it, and what operations, such as
 compression for example, must be applied to the file.
 
 ## Security
+
 In order for every server to be able to upload logs or backups to a central
 object storage bucket, they need to have some secrets stored in them. For
 example, in Swift, each server needs to have a username and an API key. This
@@ -74,18 +81,21 @@ uploads with the server hostname, which is inside its configuration file, and
 not sent by the servers themselves.
 
 Moreover, eldim will reject files that already exist. If the file
-`mail.example.com/2018-01-01/mail.log.tgz` already exists in the object store,
-it will not allow for it to be overwritten. This check is in place to prevent
-a hacked server from overwritting all previous log entries with empty data,
-effectively deleting everything.
+`mail.example.com/2018-01-01/mail.log.tgz` already exists in any backend,
+it will not allow for it to be overwritten. This check is enforced both at
+the eldim level and at each storage backend (S3, Swift, and GCS), and is in
+place to prevent a hacked server from overwriting all previous log entries
+with empty data, effectively deleting everything. Parallel uploads of the
+same file name to the same eldim instance are also rejected.
 
 Finally, eldim works only over HTTPS. This decision is hard coded inside the
 server itself, and cannot be changed by the configuration file. A code change
-is required. It is configured to only work with at least TLSv1.2, the only
-currently secure versions of TLS, but currently it may accept some more weak
-ciphers and not only the most secure ones.
+is required. It is configured to only work with at least TLSv1.2 (TLSv1.2
+and TLSv1.3 are the only currently secure versions of TLS), and defers to
+Go's default cipher suite selection, which follows modern best practices.
 
 ### Encryption
+
 Since version v0.6.0, eldim uses [age](https://age-encryption.org/) for file
 encryption. It is a well defined protocol, with multiple implementations, a
 very good CLI tool, and is already part of some operating system distributions.
@@ -111,11 +121,14 @@ RSA or Ed25519 SSH keys in addition to the age keys. A single eldim server
 supports multiple keys, of different types.
 
 ## How to run eldim
-eldim runs as a daemon, since it has to listen for HTTPS requests
-continuously. For this reason, you need to ensure that the binary is
-running all the time. The recommended way of achieving this is through your
-operating system's startup / init system. If you are using `systemd`, a basic
-unit file is provided in this repository for you to use.
+
+eldim runs as a daemon, since it has to listen for HTTPS requests continuously.
+For this reason, you need to ensure that the binary is running all the time.
+The recommended way of achieving this is through your operating system's
+startup / init system. If you are using `systemd`, a unit file is provided in
+this repository for you to use. It also includes optional sandboxing directives
+that can be uncommented to further restrict what eldim can access, reducing the
+impact of a potential compromise.
 
 As with any software, it is **not** recommended to run eldim as `root`. For
 this reason, you should create an `eldim` user. The included `systemd` unit
@@ -130,23 +143,27 @@ sudo useradd -s /usr/sbin/nologin -r -M eldim
 When executed, eldim has two command line flags that you can use to configure
 it before it even reads the configuration file. They are:
 
-* `-j`: When set, it will output all logs in JSON format, instead of plaintext
+* `-j`: When set, it will output all logs in JSON format, instead of structured text
 * `-c`: The path to the configuration file
 
 ## Metrics
+
 As of `eldim v0.2.0`, eldim supports metrics exporting using
 [Prometheus](https://prometheus.io/). You can find more information about the
 metrics currently supported and exported [here](docs/metrics.md).
 
 ## Configuration
+
 In order to read the full documentation on how to configure `eldim`, click
 [here](docs/config.md).
 
 ## The HTTP API
+
 You can find the full specification of the HTTP API of `eldim` by clicking
 [here](docs/api.md).
 
 ## How to upload data from a server
+
 You can basically upload files to eldim in any way you like, as long as you
 follow the above API, but here are some examples. This code can be for example
 in a daily or weekly cron job:
@@ -185,6 +202,7 @@ cat file.tgz | age -r "AgeID" > out.tgz.enc
 Of course, you need to replace "AgeID" with an age recipient address.
 
 ## eldim Logs
+
 Currently eldim logs a lot of information in detail. This is done on purpose
 and is not a debugging leftover. Since it is a tool that is related to
 security, it is always good to have a lot of information to be able to go back
@@ -194,11 +212,10 @@ It is totally normal for eldim to log up to 20 lines per successful upload
 request, or even more, depending on the configuration.
 
 During service startup, all information logged is related to actions and
-the configuration file, and is in plain text. After the service is started,
-all logs start with a UUID. This is called the Request ID. During the
-arrival of every request, eldim generates a unique identifier for this
-request. This identifier is included in every future log file entry that
-is related to this request.
+the configuration file. After the service is started, all logs include a
+Request ID. During the arrival of every request, eldim generates a unique
+random identifier for this request. This identifier is included in every
+future log entry that is related to this request.
 
-By default eldim logs to `stdout` and `stderr`, so if you are using the
-provided `systemd` unit file, all its logs will be available in `syslog`.
+By default eldim logs to `stderr`, so if you are using the provided
+`systemd` unit file, all its logs will be available in `syslog`.
