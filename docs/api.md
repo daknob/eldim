@@ -26,6 +26,11 @@ It will return `HTTP 409` if the same file is already being uploaded by another
 request to the same eldim instance. Any other HTTP Status Code or message is
 an error.
 
+> [!NOTE]
+> As the requested `filename` may only exist (for whatever reason) only in some
+> backends / buckets and not all of them, the `HTTP 409` error is likely not
+> retriable and a new `filename` will probably have to be set.
+
 ### password
 This `POST` parameter is a string that specifies a password, which will be
 checked against `eldim`'s `clients.yml` and will identify hosts based on their
