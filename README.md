@@ -122,6 +122,11 @@ supports multiple keys, of different types.
 
 ## How to run eldim
 
+> [!TIP]
+> eldim has macOS and Linux binaries as well as Debian `.deb` packages now in
+> [Releases](https://github.com/daknob/eldim/releases) that automate its
+> installation and operation, taking care of most of what's written below!
+
 eldim runs as a daemon, since it has to listen for HTTPS requests continuously.
 For this reason, you need to ensure that the binary is running all the time.
 The recommended way of achieving this is through your operating system's
