@@ -7,7 +7,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -227,7 +226,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	 * to determine the size is not reliable. We have to use seek
 	 * instead, and then restore to the beginning of the file.
 	 */
-	uploadSize, err := file.Seek(0, os.SEEK_END)
+	uploadSize, err := file.Seek(0, io.SeekEnd)
 	if err != nil {
 		logrus.Errorf("failed to get file size: %v", err)
 		w.Header().Set("Content-Type", "text/plain")
@@ -238,7 +237,7 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		return
 	}
 
-	_, err = file.Seek(0, os.SEEK_SET)
+	_, err = file.Seek(0, io.SeekStart)
 	if err != nil {
 		logrus.Errorf("failed to get file size: %v", err)
 		w.Header().Set("Content-Type", "text/plain")
