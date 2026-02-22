@@ -2,17 +2,16 @@ package main
 
 import (
 	"flag"
+	"log/slog"
 	"os"
 
 	"github.com/keybase/go-triplesec"
-
-	"github.com/sirupsen/logrus"
 )
 
 func main() {
 
 	/* Output tool start log */
-	logrus.Printf("Starting the eldim decryption tool...")
+	slog.Info("starting the eldim decryption tool")
 
 	/* Command line flags with all needed data */
 	inputFile := flag.String("in", "input.dat", "The encrypted file to decrypt.")
@@ -22,26 +21,28 @@ func main() {
 	flag.Parse()
 
 	/* Print input and output file to log for documentation purposes */
-	logrus.Printf("Started with input file \"%s\" and output file \"%s\"", *inputFile, *outputFile)
+	slog.Info("started", "input_file", *inputFile, "output_file", *outputFile)
 
 	/* Delete any file that exists in the outputFile */
 	os.Remove(*outputFile)
 
 	/* Read the encrypted file to RAM */
-	logrus.Printf("Reading encrypted file to memory...")
+	slog.Info("reading encrypted file to memory")
 	encData, err := os.ReadFile(*inputFile)
 	if err != nil {
-		logrus.Fatalf("Failed to read input file: %v", err)
+		slog.Error("failed to read input file", "error", err)
+		os.Exit(1)
 	}
-	logrus.Printf("File in memory. Size: %d bytes", len(encData))
+	slog.Info("file in memory", "size_bytes", len(encData))
 
 	/* Create an output file */
 	f, err := os.Create(*outputFile)
 	if err != nil {
-		logrus.Fatalf("Failed to create output file: %v", err)
+		slog.Error("failed to create output file", "error", err)
+		os.Exit(1)
 	}
 
-	logrus.Printf("Decrypting data...")
+	slog.Info("decrypting data")
 
 	/*
 	   Create a new TripleSec cipher
@@ -51,31 +52,35 @@ func main() {
 	*/
 	cipher, err := triplesec.NewCipher([]byte(*encryptionKey), nil, 4)
 	if err != nil {
-		logrus.Fatalf("Failed to initialize the cryptographic engine: %v", err)
+		slog.Error("failed to initialize the cryptographic engine", "error", err)
+		os.Exit(1)
 	}
 
 	/* Decrypt the data in memory */
 	dec, err := cipher.Decrypt(encData)
 	if err != nil {
-		logrus.Fatalf("Decryption failed: %v", err)
+		slog.Error("decryption failed", "error", err)
+		os.Exit(1)
 	}
 
-	logrus.Printf("Decryption completed.")
-	logrus.Printf("Writting to file...")
+	slog.Info("decryption completed")
+	slog.Info("writing to file")
 
 	/* Write decrypted data to the output file */
 	_, err = f.Write(dec)
 	if err != nil {
-		logrus.Fatalf("Failed to write to file: %v", err)
+		slog.Error("failed to write to file", "error", err)
+		os.Exit(1)
 	}
 
 	/* Close the output file */
 	err = f.Close()
 	if err != nil {
-		logrus.Fatalf("Failed to finalize file write: %v", err)
+		slog.Error("failed to finalize file write", "error", err)
+		os.Exit(1)
 	}
 
 	/* Done */
-	logrus.Printf("Done.")
+	slog.Info("done")
 
 }
