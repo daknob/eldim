@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"filippo.io/age"
@@ -20,6 +21,9 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
 )
+
+/* currentUploads tracks file names currently being processed by this instance */
+var currentUploads sync.Map
 
 /*
 index handles GET requests to /
@@ -149,6 +153,21 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		promFileUpErrors.With(p.Labels{"error": "File-Name-Invalid"}).Inc()
 		return
 	}
+
+	/* All files are <hostname>/<desired_name> */
+	uploadFileName := fmt.Sprintf("%s/%s", hostname, r.PostFormValue("filename"))
+
+	/* Check if this file is already being processed by this instance */
+	if _, loaded := currentUploads.LoadOrStore(uploadFileName, true); loaded {
+		logrus.Errorf("%s: file '%s' is already being uploaded by another request", rid, uploadFileName)
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusConflict)
+		fmt.Fprintf(w, "File is already being uploaded.")
+		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "409"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "File-Name-Uploaded-In-Parallel-Map"}).Inc()
+		return
+	}
+	defer currentUploads.Delete(uploadFileName)
 
 	/* Connect to all Backends */
 	logrus.Printf("%s: connecting to Backends...", rid)
@@ -326,8 +345,6 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 	logrus.Printf("%s: encryption completed", rid)
 	logrus.Printf("%s: uploading encrypted file to all Backends...", rid)
 
-	/* All files are <hostname>/<desired_name> */
-	uploadFileName := fmt.Sprintf("%s/%s", hostname, r.PostFormValue("filename"))
 	/* Counts successful uploads */
 	uploads := 0
 

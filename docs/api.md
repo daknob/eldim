@@ -22,7 +22,9 @@ This `POST` parameter is the actual file. Send the entire file here that has
 to be uploaded here.
 
 This API call will return `HTTP 200` and print `Ok` if the upload succeeded.
-Any other HTTP Status Code or message is an error.
+It will return `HTTP 409` if the same file is already being uploaded by another
+request to the same eldim instance. Any other HTTP Status Code or message is
+an error.
 
 ### password
 This `POST` parameter is a string that specifies a password, which will be
