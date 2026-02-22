@@ -3,7 +3,6 @@ package config
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"regexp"
@@ -181,7 +180,7 @@ func (conf *Config) Validate() error {
 	}
 
 	/* Attempt to read the Clients File */
-	fc, err := ioutil.ReadFile(conf.ClientFile)
+	fc, err := os.ReadFile(conf.ClientFile)
 	if err != nil {
 		return fmt.Errorf("Failed to open clients file: %v", err)
 	}

@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"io/ioutil"
 	"os"
 
 	"github.com/keybase/go-triplesec"
@@ -30,7 +29,7 @@ func main() {
 
 	/* Read the encrypted file to RAM */
 	logrus.Printf("Reading encrypted file to memory...")
-	encData, err := ioutil.ReadFile(*inputFile)
+	encData, err := os.ReadFile(*inputFile)
 	if err != nil {
 		logrus.Fatalf("Failed to read input file: %v", err)
 	}

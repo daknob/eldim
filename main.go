@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"net/http"
 	"time"
 
@@ -53,7 +53,7 @@ func main() {
 	logrus.Printf("parsing the configuration file...")
 
 	/* Open the configuration file, and read contents to RAM */
-	confb, err := ioutil.ReadFile(*configPath)
+	confb, err := os.ReadFile(*configPath)
 	if err != nil {
 		logrus.Fatalf("could not open configuration file: %v", err)
 	}
@@ -75,7 +75,7 @@ func main() {
 	logrus.Printf("configuration file validated.")
 
 	/* Load client file */
-	clib, err := ioutil.ReadFile(conf.ClientFile)
+	clib, err := os.ReadFile(conf.ClientFile)
 	if err != nil {
 		logrus.Fatalf("could not open clients file: %v", err)
 	}
