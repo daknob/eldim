@@ -18,7 +18,6 @@ import (
 	"github.com/daknob/hlog"
 	p "github.com/prometheus/client_golang/prometheus"
 
-	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
 )
 
@@ -28,7 +27,7 @@ var currentUploads sync.Map
 /*
 index handles GET requests to /
 */
-func index(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func index(w http.ResponseWriter, r *http.Request) {
 	hlog.LogRequest(r)
 
 	/* If it's okay to print information about the software, show some basic info */
@@ -53,7 +52,7 @@ func index(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 /*
 v1fileUpload handles POST requests to /api/v1/file/upload/
 */
-func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func v1fileUpload(w http.ResponseWriter, r *http.Request) {
 	/* Normal HTTP Procedure */
 	rid := hlog.LogRequest(r)
 	if conf.ServerTokens {

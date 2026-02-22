@@ -12,7 +12,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"github.com/julienschmidt/httprouter"
 	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -94,22 +93,20 @@ func main() {
 	logrus.Printf("configuring the HTTP Server...")
 
 	/* Create an HTTP Router */
-	router := httprouter.New()
-	router.GET("/", index)
-	router.POST("/api/v1/file/upload/", v1fileUpload)
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /{$}", index)
+	mux.HandleFunc("POST /api/v1/file/upload/", v1fileUpload)
 
 	/* Only enable Prometheus metrics if configured */
 	if conf.PrometheusEnabled {
-		router.GET(
-			"/metrics",
+		mux.HandleFunc(
+			"GET /metrics",
 			requestBasicAuth(
 				conf.PrometheusAuthUser,
 				conf.PrometheusAuthPass,
 				"Prometheus Metrics",
 				*promMetricsAuth,
-				httpHandlerToHTTPRouterHandler(
-					promhttp.Handler(),
-				),
+				promhttp.Handler().ServeHTTP,
 			),
 		)
 	}
@@ -126,7 +123,7 @@ func main() {
 		WriteTimeout:      120 * time.Second,
 		IdleTimeout:       180 * time.Second,
 		TLSConfig:         tlsConfig,
-		Handler:           router,
+		Handler:           mux,
 		Addr:              fmt.Sprintf(":%d", conf.ListenPort),
 	}
 

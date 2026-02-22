@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/julienschmidt/httprouter"
 	p "github.com/prometheus/client_golang/prometheus"
 )
 
@@ -60,13 +59,13 @@ requestBasicAuth is an HTTP Handler wrapper that will require the passed
 handler to be served only if the HTTP Basic Authentication Credentials are
 correct.
 */
-func requestBasicAuth(username, password, realm string, pa p.CounterVec, handler httprouter.Handle) httprouter.Handle {
+func requestBasicAuth(username, password, realm string, pa p.CounterVec, handler http.HandlerFunc) http.HandlerFunc {
 
 	/* Calculate the SHA-256 Hash of the Required Username and Password */
 	RequiredUserNameHash := sha256.Sum256([]byte(username))
 	RequiredPasswordHash := sha256.Sum256([]byte(password))
 
-	return func(w http.ResponseWriter, r *http.Request, Params httprouter.Params) {
+	return func(w http.ResponseWriter, r *http.Request) {
 
 		user, pass, ok := r.BasicAuth()
 
@@ -106,7 +105,7 @@ func requestBasicAuth(username, password, realm string, pa p.CounterVec, handler
 		}
 
 		pa.With(p.Labels{"success": "true", "error": ""}).Inc()
-		handler(w, r, Params)
+		handler(w, r)
 	}
 }
 
@@ -128,12 +127,3 @@ func isValidFilename(name string) bool {
 	return true
 }
 
-/*
-httpHandlerToHTTPRouterHandler is a function that converts an HTTP Handler to
-an HTTPRouter Handler, ignoring the Params field and assuming it is not used
-*/
-func httpHandlerToHTTPRouterHandler(h http.Handler) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		h.ServeHTTP(w, r)
-	}
-}
