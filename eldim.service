@@ -9,5 +9,29 @@ ExecStart=/usr/bin/eldim -c /etc/eldim/eldim.yml
 Restart=always
 User=eldim
 
+# Uncomment the following lines to enable systemd sandboxing.
+# These restrict what eldim can access, reducing the impact of a compromise.
+# In theory, all of these can be enabled, but some may break depending on the
+# configuration in `eldim.yml`, or future changes to how Go works and where it
+# stores temporary files.
+# The error messages may get cryptic (e.g. an existing file may be reported as
+# not found because it's hidden from eldim, etc.)
+
+# Make the entire filesystem read-only
+#ProtectSystem=strict
+
+# Sandbox eldim's tmp and separate it from other processes (large uploads over
+# maxuploadram are stored there)
+#PrivateTmp=true
+
+# Prevent the service from gaining new privileges (should never happen)
+#NoNewPrivileges=true
+
+# Deny access to /home, /root, and /run/user (will appear to eldim as empty)
+#ProtectHome=true
+
+# Deny access to physical hardware devices (not needed by eldim)
+#PrivateDevices=true
+
 [Install]
 WantedBy=multi-user.target
