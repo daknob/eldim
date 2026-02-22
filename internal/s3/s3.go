@@ -223,7 +223,11 @@ func (c *Client) UploadFile(ctx context.Context, name string, file io.Reader, fi
 					}
 					uinfo, err = c.Conn.PutObject(ctx, c.Config.Bucket, name, file, filesize, retryOpts)
 					if err != nil {
-						return fmt.Errorf("failed to upload file on retry: %v", err)
+						/* If we still get 501 without the header, it was unrelated */
+						if minio.ToErrorResponse(err).StatusCode == http.StatusNotImplemented {
+							conditionalWriteSupport.Store(c.Config.Endpoint, true)
+						}
+						return fmt.Errorf("failed to upload file: %v", err)
 					}
 					if filesize != uinfo.Size {
 						return fmt.Errorf("bytes uploaded is not the same as file size: %d vs %d", uinfo.Size, filesize)
