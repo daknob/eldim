@@ -140,6 +140,17 @@ func v1fileUpload(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		return
 	}
 
+	/* Validate the file name */
+	if !isValidFilename(r.PostFormValue("filename")) {
+		logrus.Errorf("%s: invalid file name supplied", rid)
+		w.Header().Set("Content-Type", "text/plain")
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, "Invalid file name")
+		promReqServed.With(p.Labels{"method": "POST", "path": "/api/v1/file/upload/", "status": "400"}).Inc()
+		promFileUpErrors.With(p.Labels{"error": "File-Name-Invalid"}).Inc()
+		return
+	}
+
 	/* Connect to all Backends */
 	logrus.Printf("%s: connecting to Backends...", rid)
 	var backends []backend.Client

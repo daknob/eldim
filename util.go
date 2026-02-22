@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 
 	"github.com/julienschmidt/httprouter"
 	p "github.com/prometheus/client_golang/prometheus"
@@ -107,6 +108,24 @@ func requestBasicAuth(username, password, realm string, pa p.CounterVec, handler
 		pa.With(p.Labels{"success": "true", "error": ""}).Inc()
 		handler(w, r, Params)
 	}
+}
+
+/*
+isValidFilename checks if a user-supplied filename is safe for use as an object
+storage key. It rejects null bytes, path traversal attempts (`.` and `..`), and
+empty path components (leading/trailing/double slashes). Technically `.` and
+`..` don't cause problems in object storage but it doesn't hurt to drop them.
+*/
+func isValidFilename(name string) bool {
+	if strings.Contains(name, "\x00") {
+		return false
+	}
+	for _, component := range strings.Split(name, "/") {
+		if component == "." || component == ".." || component == "" {
+			return false
+		}
+	}
+	return true
 }
 
 /*
