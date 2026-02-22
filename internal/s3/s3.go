@@ -7,9 +7,10 @@ import (
 	"net/http"
 	"sync"
 
+	"log/slog"
+
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	"github.com/sirupsen/logrus"
 )
 
 /*
@@ -213,7 +214,7 @@ func (c *Client) UploadFile(ctx context.Context, name string, file io.Reader, fi
 		/* If the endpoint does not support If-None-Match, remember and retry */
 		if supported && minio.ToErrorResponse(err).StatusCode == http.StatusNotImplemented {
 			conditionalWriteSupport.Store(c.Config.Endpoint, false)
-			logrus.Warnf("S3 endpoint '%s' does not support If-None-Match, retrying without it", c.Config.Endpoint)
+			slog.Warn("S3 endpoint does not support If-None-Match, retrying without it", "endpoint", c.Config.Endpoint)
 
 			if seeker, ok := file.(io.Seeker); ok {
 				if _, seekErr := seeker.Seek(0, io.SeekStart); seekErr == nil {

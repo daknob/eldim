@@ -4,15 +4,15 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
-	"os"
+	"log/slog"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/daknob/eldim/config"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v3"
 )
 
@@ -36,52 +36,62 @@ func main() {
 	/* Parse flags */
 	flag.Parse()
 
-	/* Set the log format to JSON if requested */
-	if *logFormat == true {
-		logrus.SetFormatter(&logrus.JSONFormatter{})
+	/* Set up structured logging */
+	var handler slog.Handler
+	if *logFormat {
+		handler = slog.NewJSONHandler(os.Stderr, nil)
 	} else {
-		logrus.SetFormatter(&logrus.TextFormatter{})
+		handler = slog.NewTextHandler(os.Stderr, nil)
 	}
+	slog.SetDefault(slog.New(handler))
 
 	/* Startup logs */
-	logrus.Printf("starting eldim...")
-	logrus.Printf("log in JSON: %v", *logFormat)
-	logrus.Printf("configuration file: %s", *configPath)
+	slog.Info("starting eldim", "version", version)
+	slog.Info("configuration",
+		"json_logs", *logFormat,
+		"config_file", *configPath,
+	)
 
 	/* Parse the configuration file */
-	logrus.Printf("parsing the configuration file...")
+	slog.Info("parsing configuration file")
 
 	/* Open the configuration file, and read contents to RAM */
 	confb, err := os.ReadFile(*configPath)
 	if err != nil {
-		logrus.Fatalf("could not open configuration file: %v", err)
+		slog.Error("could not open configuration file", "path", *configPath, "error", err)
+		os.Exit(1)
 	}
 
 	/* Attempt to parse it for YAML */
 	err = yaml.Unmarshal(confb, &conf)
 	if err != nil {
-		logrus.Fatalf("could not parse the YAML configuration file: %v", err)
+		slog.Error("could not parse YAML configuration file", "path", *configPath, "error", err)
+		os.Exit(1)
 	}
 
-	logrus.Printf("configuration file loaded.")
+	slog.Info("configuration file loaded")
 
 	/* Validate configuration by appropriate function call */
-	logrus.Printf("validating parameters...")
+	slog.Info("validating parameters")
 	err = conf.Validate()
 	if err != nil {
-		logrus.Fatalf("invalid configuration: %v", err)
+		slog.Error("invalid configuration", "error", err)
+		os.Exit(1)
 	}
-	logrus.Printf("configuration file validated.")
+	slog.Info("configuration file validated")
 
 	/* Load client file */
 	clib, err := os.ReadFile(conf.ClientFile)
 	if err != nil {
-		logrus.Fatalf("could not open clients file: %v", err)
+		slog.Error("could not open clients file", "path", conf.ClientFile, "error", err)
+		os.Exit(1)
 	}
 	err = yaml.Unmarshal(clib, &clients)
 	if err != nil {
-		logrus.Fatalf("could not parse clients YML file: %v", err)
+		slog.Error("could not parse clients YAML file", "path", conf.ClientFile, "error", err)
+		os.Exit(1)
 	}
+	slog.Info("clients file loaded", "clients", len(clients))
 
 	/* Register Prometheus Metrics */
 	registerPromMetrics()
@@ -90,7 +100,7 @@ func main() {
 	updateConfMetrics()
 
 	/* Various web server configurations */
-	logrus.Printf("configuring the HTTP Server...")
+	slog.Info("configuring HTTP server")
 
 	/* Create an HTTP Router */
 	mux := http.NewServeMux()
@@ -127,20 +137,26 @@ func main() {
 		Addr:              fmt.Sprintf(":%d", conf.ListenPort),
 	}
 
-	logrus.Printf("HTTP Server Configured.")
+	slog.Info("HTTP server configured",
+		"port", conf.ListenPort,
+		"read_timeout_s", conf.ReadTimeout,
+		"tls_chain", conf.TLSChainPath,
+		"prometheus", conf.PrometheusEnabled,
+	)
 
 	/* Start serving TLS */
-	logrus.Printf("serving on :%d ...", conf.ListenPort)
+	slog.Info("starting TLS listener", "port", conf.ListenPort)
 
 	err = server.ListenAndServeTLS(
 		conf.TLSChainPath,
 		conf.TLSKeyPath,
 	)
 	if err != nil {
-		logrus.Fatalf("failed to start HTTP Server: %v", err)
+		slog.Error("failed to start HTTP server", "error", err)
+		os.Exit(1)
 	}
 
 	/* Exit */
-	logrus.Printf("eldim quitting...")
+	slog.Info("eldim quitting")
 
 }

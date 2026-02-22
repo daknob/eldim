@@ -5,12 +5,10 @@ go 1.25.0
 require (
 	cloud.google.com/go/storage v1.60.0
 	filippo.io/age v1.3.1
-	github.com/daknob/hlog v0.1.0
 	github.com/keybase/go-triplesec v0.0.0-20251211201629-aae48d5abcdf
 	github.com/minio/minio-go/v7 v7.0.98
 	github.com/ncw/swift v1.0.53
 	github.com/prometheus/client_golang v1.23.2
-	github.com/sirupsen/logrus v1.9.4
 	google.golang.org/api v0.267.0
 	gopkg.in/yaml.v3 v3.0.1
 )

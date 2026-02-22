@@ -1,8 +1,10 @@
 package main
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/base64"
 	"fmt"
 	"net"
 	"net/http"
@@ -10,6 +12,17 @@ import (
 
 	p "github.com/prometheus/client_golang/prometheus"
 )
+
+/*
+generateRequestID returns a random 16-character URL-safe base64 string for
+request tracing. It uses 12 bytes of crypto/rand which aligns exactly to
+16 base64 characters with no padding.
+*/
+func generateRequestID() string {
+	b := make([]byte, 12)
+	rand.Read(b)
+	return base64.URLEncoding.EncodeToString(b)
+}
 
 /*
 getIPName returns the client name of a given IP Address ip. If it is not found,
