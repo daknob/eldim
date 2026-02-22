@@ -6,7 +6,6 @@ require (
 	cloud.google.com/go/storage v1.60.0
 	filippo.io/age v1.3.1
 	github.com/daknob/hlog v0.1.0
-	github.com/julienschmidt/httprouter v1.3.0
 	github.com/keybase/go-triplesec v0.0.0-20251211201629-aae48d5abcdf
 	github.com/minio/minio-go/v7 v7.0.98
 	github.com/ncw/swift v1.0.53
@@ -44,7 +43,6 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.12 // indirect
 	github.com/googleapis/gax-go/v2 v2.17.0 // indirect
-	github.com/keybase/go-crypto v0.0.0-20200123153347-de78d2cb44f4 // indirect
 	github.com/klauspost/compress v1.18.4 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/klauspost/crc32 v1.3.0 // indirect
@@ -82,5 +80,4 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260217215200-42d3e9bedb6d // indirect
 	google.golang.org/grpc v1.79.1 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
